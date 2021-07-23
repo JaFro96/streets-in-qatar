@@ -1,0 +1,180 @@
+---
+title: "Map and Crop Tiles"
+author: "Jannis, Lia and Katharina"
+date: "17 5 2021"
+output: html_document
+---
+
+
+## Map 2017
+
+```{r map}
+library(raster)
+library(gdalUtils)
+setwd("Bahrain_2021_3Band/files")
+#getwd() 
+files = list.files(pattern = ".tif$") 
+filesList = as.list(files)
+# put tiles into a list of raster stacks
+stackList = lapply(filesList, stack)
+#gdalbuildvrt -input_file_list my_list.txt doq_index.vrt
+buildvrt=gdalbuildvrt(gdalfile = filesList, 
+             output.vrt = "bahrain_2021.vrt",
+             file.name = TRUE)
+gdal_translate(src_dataset = "bahrain_2021.vrt", 
+               dst_dataset = "bahrain_2021_test.tif", 
+               output_Raster = TRUE, # returns the raster as Raster*Object
+                                    # if TRUE, you should consider to assign 
+                                    # the whole function to an object like dem <- gddal_tr..
+               options = c("BIGTIFF=YES", "COMPRESSION=LZW"))
+```
+
+
+
+
+# choose a raster tile and prepare it for the subset
+```{r test tile 9}
+setNAs <- function(test_tile){
+  # choose one tile and collect train data 
+  # size 1GB
+  test_tile[test_tile[]==0] <- NA
+  test_tile = trim(test_tile)
+  test_tile = dropLayer(test_tile,4)
+  #plotRGB(test_tile,r=1,g=2,b=3)
+  return (test_tile)
+  }
+
+#setNAs(stackList[[1]])
+#stackList = lapply(stackList, setNAs)
+```
+
+
+-----------------------------------------------------------------------------------------------
+
+Deprecated:
+
+
+```{r subset test tile}
+extent(test_tile)
+#50.511,26.120
+#26.09350  50.56411
+plot(test_tile)
+crop_test_tile = test_tile#crop(test_tile,c(540000,543000,2783000,2786000))
+plotRGB(crop_test_tile,r=1,g=2,b=3, main="Image to collect train data")
+dl_subsets(crop_test_tile,c(150,150),"Bahrain_2021_3Band/files/subsets/150_")# c(10,10) war zu klein
+```
+
+### Plot subsets
+
+```{r plot subsets}
+setwd("Bahrain_2021_3Band/files/subsets")
+test_files = list.files(pattern = ".jpg$")
+test_files_stack = lapply(test_files, stack)
+par(mfrow=c(4,4))
+lapply(test_files_stack,plotRGB)
+```
+
+### Challenges and risks
+
+Distinguish between asphalt roads and earthen roads
+
+```{r challenges earthen roads vs asphalt roads}
+par(mfrow=c(2,2))
+lapply(c(test_files_stack[[5]],test_files_stack[[11]],test_files_stack[[19]],test_files_stack[[23]]),plotRGB)
+```
+
+## Crop 2017
+From Single images to maps (see Tutorial) https://dachro.github.io/ogh_summer_school_2020/Tutorial_DL_UAV.html#from_single_images_to_maps
+
+targetsize: no of rows and columns [x,y]
+
+```{r plot}
+library(raster)
+setwd("bahrain_2017/files")
+mosaic_rasters(gdalfile=files,dst_dataset="bahrain_2017.tif",of="GTiff")
+gdalinfo("bahrain_2017.tif")
+
+```
+
+```{r crop}
+library(tiff)
+dl_subsets <- function(inputrst, targetsize, targetdir, targetname="", img_info_only = FALSE, is_mask = FALSE){
+  require(tiff)
+  require(raster)
+
+  
+  #determine next number of quadrats in x and y direction, by simple rounding
+  targetsizeX <- targetsize[1]
+  targetsizeY <- targetsize[2]
+  inputX <- ncol(inputrst)
+  inputY <- nrow(inputrst)
+  
+  
+  print(targetsizeX)
+  print(targetsizeY)
+  print(inputX)
+  print(inputY)
+  
+  #determine dimensions of raster so that 
+  #it can be split by whole number of subsets (by shrinking it)
+  while(inputX%%targetsizeX!=0){
+    inputX = inputX-1  
+  }
+  while(inputY%%targetsizeY!=0){
+    inputY = inputY-1    
+  }
+  
+  #determine difference
+  diffX <- ncol(inputrst)-inputX
+  diffY <- nrow(inputrst)-inputY
+  
+  #determine new dimensions of raster and crop, 
+  #cutting evenly on all sides if possible
+  newXmin <- floor(diffX/2)
+  newXmax <- ncol(inputrst)-ceiling(diffX/2)-1
+  newYmin <- floor(diffY/2)
+  newYmax <- nrow(inputrst)-ceiling(diffY/2)-1
+  rst_cropped <- suppressMessages(crop(inputrst, extent(inputrst,newYmin,newYmax,newXmin,newXmax)))
+  #writeRaster(rst_cropped,filename = target_dir_crop)
+  
+    #return (list(ssizeX = ssizeX, ssizeY = ssizeY, nsx = nsx, nsy =nsy))
+    agg <- suppressMessages(aggregate(rst_cropped[[1]],c(targetsizeX,targetsizeY)))
+    agg[]    <- suppressMessages(1:ncell(agg))
+    agg_poly <- suppressMessages(rasterToPolygons(agg))
+    names(agg_poly) <- "polis"
+    
+    pb <- txtProgressBar(min = 0, max = ncell(agg), style = 3)
+    for(i in 1:ncell(agg)) {
+      
+      # rasterOptions(tmpdir=tmpdir)
+      setTxtProgressBar(pb, i)
+      e1  <- extent(agg_poly[agg_poly$polis==i,])
+      
+      subs <- suppressMessages(crop(rst_cropped,e1))
+      #rescale to 0-1, for jpeg export
+      if(is_mask==FALSE){
+        
+        subs <- suppressMessages((subs-cellStats(subs,"min"))/(cellStats(subs,"max")-cellStats(subs,"min")))
+      } 
+      #write jpg
+      
+     
+      writeJPEG(as.array(subs),target = paste0(targetdir,targetname,i,".jpg"),quality = 1)
+      
+      #writeRaster(subs,filename=paste0(targetdir,"SplitRas_",i,".tif"),overwrite=TRUE) 
+      #return(c(extent(rst_cropped),crs(rst_cropped)))
+    }
+    close(pb)
+    #img_info <- list("tiles_rows"=nrow(rst_cropped)/targetsizeY, "tiles_cols"=ncol(rst_cropped)/targetsizeX,"crs"= crs(rst_cropped),"extent"=extent(rst_cropped))
+    #writeRaster(rst_cropped,filename = paste0(targetdir,"input_rst_cropped.tif"))
+    rm(subs,agg,agg_poly)
+    gc()
+    return(rst_cropped)
+  
+}
+
+dl_subsets("Bahrain_2017/files/doha_2017.tif", c(10, 10), "subsets", "bahrain_2017_subsets.tif")
+```
+
+
+

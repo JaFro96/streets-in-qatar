@@ -1,0 +1,207 @@
+# Prepare the data for the pixelwise classification
+
+From divide images into subsets
+```{r, dl_subsets}
+dl_subsets <- function(inputrst, targetsize, targetdir, targetname="", img_info_only = FALSE, is_mask = FALSE){
+  require(jpeg)
+  require(raster)
+  
+  #determine next number of quadrats in x and y direction, by simple rounding
+  targetsizeX <- targetsize[1]
+  targetsizeY <- targetsize[2]
+  inputX <- ncol(inputrst)
+  inputY <- nrow(inputrst)
+  
+  #determine dimensions of raster so that 
+  #it can be split by whole number of subsets (by shrinking it)
+  while(inputX%%targetsizeX!=0){
+    inputX = inputX-1  
+  }
+  while(inputY%%targetsizeY!=0){
+    inputY = inputY-1    
+  }
+  
+  #determine difference
+  diffX <- ncol(inputrst)-inputX
+  diffY <- nrow(inputrst)-inputY
+  
+  #determine new dimensions of raster and crop, 
+  #cutting evenly on all sides if possible
+  newXmin <- floor(diffX/2)
+  newXmax <- ncol(inputrst)-ceiling(diffX/2)-1
+  newYmin <- floor(diffY/2)
+  newYmax <- nrow(inputrst)-ceiling(diffY/2)-1
+  rst_cropped <- suppressMessages(crop(inputrst, extent(inputrst,newYmin,newYmax,newXmin,newXmax)))
+  #writeRaster(rst_cropped,filename = target_dir_crop)
+  
+    #return (list(ssizeX = ssizeX, ssizeY = ssizeY, nsx = nsx, nsy =nsy))
+    agg <- suppressMessages(aggregate(rst_cropped[[1]],c(targetsizeX,targetsizeY)))
+    agg[]    <- suppressMessages(1:ncell(agg))
+    agg_poly <- suppressMessages(rasterToPolygons(agg))
+    names(agg_poly) <- "polis"
+    
+    pb <- txtProgressBar(min = 0, max = ncell(agg), style = 3)
+    for(i in 1:ncell(agg)) {
+      
+      # rasterOptions(tmpdir=tmpdir)
+      setTxtProgressBar(pb, i)
+      e1  <- extent(agg_poly[agg_poly$polis==i,])
+      
+      subs <- suppressMessages(crop(rst_cropped,e1))
+      #rescale to 0-1, for jpeg export
+      if(is_mask==FALSE){
+        
+        subs <- suppressMessages((subs-cellStats(subs,"min"))/(cellStats(subs,"max")-cellStats(subs,"min")))
+      } 
+      #write jpg
+      
+     
+      writeJPEG(as.array(subs),target = paste0(targetdir,targetname,i,".jpg"),quality = 1)
+      
+      #writeRaster(subs,filename=paste0(targetdir,"SplitRas_",i,".tif"),overwrite=TRUE) 
+      #return(c(extent(rst_cropped),crs(rst_cropped)))
+    }
+    close(pb)
+    #img_info <- list("tiles_rows"=nrow(rst_cropped)/targetsizeY, "tiles_cols"=ncol(rst_cropped)/targetsizeX,"crs"= crs(rst_cropped),"extent"=extent(rst_cropped))
+    #writeRaster(rst_cropped,filename = paste0(targetdir,"input_rst_cropped.tif"))
+    rm(subs,agg,agg_poly)
+    gc()
+    return(rst_cropped)
+  
+}
+```
+
+```{r create masks}
+library(terra)
+library(raster)
+library(sf)
+# load planet image of train area
+bahrain = rast("Bahrain_2021_3Band/files/bahrain_2021.tif")
+st_bahrain = stack("Bahrain_2021_3Band/files/bahrain_2021.tif")
+# load openstreetmap data of the streegts
+streets_all = read_sf("data/shp/streets_osm.shp")
+# transform osm data to crs of bahrain image
+streets_utm = st_transform(streets_all, crs = crs(bahrain))
+# crop osm data to bbox of raster image and write to disk
+streets = st_crop(streets_utm, st_bbox(st_bahrain))
+st_write(streets, "data/shp/cropped.shp")
+```
+
+Do a rasterization of the streets shapefile
+```{r rasterization}
+# creates a SpatVector object
+v_lines = vect(streets)
+# prere the output raster size
+r = rast(v_lines, ncol = ncol(bahrain), nrow = nrow(bahrain))
+x <- rasterize(v_lines, r, touches = TRUE, background = 0)
+par(mfrow=c(1,2))
+plot(x, col =c("white","black"), axes = FALSE, legend = FALSE)
+plotRGB(bahrain, r = 3, g=2, b=1, stretch = "hist")
+```
+
+```{r glimpse on how the relate}
+mapview(st_geometry(streets)) + viewRGB(st_bahrain,r=3,g=2,b=1)
+```
+
+
+Buffer streets to get better rasterization result, because main roads have a higher width
+```{r buffer}
+primaries = streets[streets$fclass == "primary",]
+secondaries = streets[streets$fclass == "secondary",]
+tertiaries = streets[streets$fclass == "tertiary",]
+trunks = streets[streets$fclass == "trunk",]
+
+poly_streets = rbind(primaries,secondaries, tertiaries, trunks)
+
+st_geometry(poly_streets[poly_streets$fclass == "trunk",]) = st_geometry(st_buffer(trunks, dist = 6))
+st_geometry(poly_streets[poly_streets$fclass == "primary",]) = st_geometry(st_buffer(primaries, dist = 5))
+st_geometry(poly_streets[poly_streets$fclass == "secondary",]) = st_geometry(st_buffer(secondaries, dist = 4))
+st_geometry(poly_streets[poly_streets$fclass == "tertiary",]) = st_geometry(st_buffer(tertiaries, dist = 3))
+```
+
+```{r rasterization of main roads}
+v_poly = vect(poly_streets)
+r_poly = rast(v_poly, ncol = ncol(bahrain), nrow = nrow(bahrain), extent = ext(x))
+x_poly <- rasterize(v_poly, r_poly, touches = TRUE, background = 0)
+par(mfrow=c(1,2))
+plot(x_poly, col =c("white","black"), axes = FALSE, legend = FALSE)
+plot(x, col =c("white","black"), axes = FALSE, legend = FALSE)
+plotRGB(bahrain, r = 3, g=2, b=1, stretch = "hist")
+```
+
+### Combine resulting two raster layers
+```{r combine resulting rasters}
+result = max(x_poly,x)
+writeRaster(result, "data/Mask_by_R.tif")
+```
+
+```{r merge single raster images}
+mosaic_bahrain = mosaic(stackList[[1]],stackList[[2]],stackList[[3]], stackList[[4]], fun = mean)
+writeRaster(mosaic_bahrain, "Bahrain_2021_3Band/files/bahrain_2021.tif", overwrite = TRUE)
+```
+
+
+### Create subsets for the unet training
+```{r}
+library(raster)
+inputrst = stack("Bahrain_2021_3Band/files/bahrain_2021.tif")
+inputrst_mask = raster("Mask_by_R.tif")
+plotRGB(inputrst, r = 1, g=2, b=3, stretch = "hist")
+plot(inputrst_mask, col=c("white","black"))
+# Create subsets of new bahrain image
+dl_subsets(inputrst = inputrst, targetsize = c(448,448), targetdir = "training_unet/imgs/")
+#dl_subsets(inputrst = inputrst_mask, targetsize = c(448,448), targetdir = "training_unet/masks/")
+```
+
+```{r compare to tutorial}
+library(terra)
+unet_ex = rast("tutorial_data/training_unet/imgs/quecken_img_1_1.jpg")
+unetmask_ex = rast("tutorial_data/training_unet/masks/quecken_mask_1_1.jpg")
+```
+
+```{r view first image}
+img1 = stack("training_unet/imgs/15.jpg")
+mask1 = raster("training_unet/masks/15.jpg")
+```
+
+```{r}
+mask1[mask1<2] <- 0
+mask1[mask1>2] <- 1
+```
+
+
+```{r mosaic testarea}
+test_files = list.files("2021/files", pattern = ".tif$") 
+# put tiles into a list of raster stacks
+setwd("2021/files")
+stackList_test = lapply(test_files, stack)
+
+# test one image
+testImage = stackList_test[[1]]
+testImage = crop(testImage, e)
+
+stackList_test = lapply(stackList_test, setNAs)
+testImage = setNAs(testImage)
+mosaic_doha = mosaic(stackList_test[[1]],
+                     stackList_test[[2]],
+                     stackList_test[[3]],
+                     fun = mean)
+# r = stackList_test[[1]]
+# r = crop(r, extent(532500,540000,2783000, 2784000))
+writeRaster(testImage, "testarea_unet/doha_2021.tif",overwrite = TRUE)
+
+```
+
+
+```{r create testarea subsets}
+#qatar_testarea = stack("2021/files/20170422_062109_1030_3B_Visual_clip.tif")
+qatar_testarea = stack("testarea_unet/doha_2021_test.tif")
+dl_subsets(inputrst = qatar_testarea, targetsize = c(448,448), targetdir = "testarea_unet/subsets/")
+```
+
+
+
+```{r}
+print("This is the end!")
+```
+

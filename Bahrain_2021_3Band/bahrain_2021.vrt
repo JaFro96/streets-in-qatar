@@ -1,0 +1,156 @@
+<VRTDataset rasterXSize="4704" rasterYSize="4437">
+  <SRS>PROJCS["WGS 84 / UTM zone 39N",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",51],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","32639"]]</SRS>
+  <GeoTransform>  4.4760000000000000e+05,  3.0000000000000000e+00,  0.0000000000000000e+00,  2.8962630000000000e+06,  0.0000000000000000e+00, -3.0000000000000000e+00</GeoTransform>
+  <VRTRasterBand dataType="Byte" band="1">
+    <ColorInterp>Red</ColorInterp>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_063441_36_2276_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>1</SourceBand>
+      <SourceProperties RasterXSize="4704" RasterYSize="4437" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+      <DstRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_063443_66_2276_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>1</SourceBand>
+      <SourceProperties RasterXSize="4694" RasterYSize="1109" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="4694" ySize="1109" />
+      <DstRect xOff="0" yOff="3328" xSize="4694" ySize="1109" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_070445_1026_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>1</SourceBand>
+      <SourceProperties RasterXSize="939" RasterYSize="1455" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="939" ySize="1455" />
+      <DstRect xOff="12" yOff="0" xSize="939" ySize="1455" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_070446_1026_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>1</SourceBand>
+      <SourceProperties RasterXSize="460" RasterYSize="3810" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="460" ySize="3810" />
+      <DstRect xOff="3" yOff="0" xSize="460" ySize="3810" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">bahrain_2021_test.tif</SourceFilename>
+      <SourceBand>1</SourceBand>
+      <SourceProperties RasterXSize="4704" RasterYSize="4437" DataType="Byte" BlockXSize="4704" BlockYSize="1" />
+      <SrcRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+      <DstRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+    </SimpleSource>
+  </VRTRasterBand>
+  <VRTRasterBand dataType="Byte" band="2">
+    <ColorInterp>Green</ColorInterp>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_063441_36_2276_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>2</SourceBand>
+      <SourceProperties RasterXSize="4704" RasterYSize="4437" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+      <DstRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_063443_66_2276_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>2</SourceBand>
+      <SourceProperties RasterXSize="4694" RasterYSize="1109" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="4694" ySize="1109" />
+      <DstRect xOff="0" yOff="3328" xSize="4694" ySize="1109" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_070445_1026_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>2</SourceBand>
+      <SourceProperties RasterXSize="939" RasterYSize="1455" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="939" ySize="1455" />
+      <DstRect xOff="12" yOff="0" xSize="939" ySize="1455" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_070446_1026_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>2</SourceBand>
+      <SourceProperties RasterXSize="460" RasterYSize="3810" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="460" ySize="3810" />
+      <DstRect xOff="3" yOff="0" xSize="460" ySize="3810" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">bahrain_2021_test.tif</SourceFilename>
+      <SourceBand>2</SourceBand>
+      <SourceProperties RasterXSize="4704" RasterYSize="4437" DataType="Byte" BlockXSize="4704" BlockYSize="1" />
+      <SrcRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+      <DstRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+    </SimpleSource>
+  </VRTRasterBand>
+  <VRTRasterBand dataType="Byte" band="3">
+    <ColorInterp>Blue</ColorInterp>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_063441_36_2276_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>3</SourceBand>
+      <SourceProperties RasterXSize="4704" RasterYSize="4437" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+      <DstRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_063443_66_2276_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>3</SourceBand>
+      <SourceProperties RasterXSize="4694" RasterYSize="1109" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="4694" ySize="1109" />
+      <DstRect xOff="0" yOff="3328" xSize="4694" ySize="1109" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_070445_1026_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>3</SourceBand>
+      <SourceProperties RasterXSize="939" RasterYSize="1455" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="939" ySize="1455" />
+      <DstRect xOff="12" yOff="0" xSize="939" ySize="1455" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_070446_1026_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>3</SourceBand>
+      <SourceProperties RasterXSize="460" RasterYSize="3810" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="460" ySize="3810" />
+      <DstRect xOff="3" yOff="0" xSize="460" ySize="3810" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">bahrain_2021_test.tif</SourceFilename>
+      <SourceBand>3</SourceBand>
+      <SourceProperties RasterXSize="4704" RasterYSize="4437" DataType="Byte" BlockXSize="4704" BlockYSize="1" />
+      <SrcRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+      <DstRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+    </SimpleSource>
+  </VRTRasterBand>
+  <VRTRasterBand dataType="Byte" band="4">
+    <ColorInterp>Alpha</ColorInterp>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_063441_36_2276_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>4</SourceBand>
+      <SourceProperties RasterXSize="4704" RasterYSize="4437" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+      <DstRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_063443_66_2276_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>4</SourceBand>
+      <SourceProperties RasterXSize="4694" RasterYSize="1109" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="4694" ySize="1109" />
+      <DstRect xOff="0" yOff="3328" xSize="4694" ySize="1109" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_070445_1026_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>4</SourceBand>
+      <SourceProperties RasterXSize="939" RasterYSize="1455" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="939" ySize="1455" />
+      <DstRect xOff="12" yOff="0" xSize="939" ySize="1455" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">20210428_070446_1026_3B_Visual_clip.tif</SourceFilename>
+      <SourceBand>4</SourceBand>
+      <SourceProperties RasterXSize="460" RasterYSize="3810" DataType="Byte" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="460" ySize="3810" />
+      <DstRect xOff="3" yOff="0" xSize="460" ySize="3810" />
+    </SimpleSource>
+    <SimpleSource>
+      <SourceFilename relativeToVRT="1">bahrain_2021_test.tif</SourceFilename>
+      <SourceBand>4</SourceBand>
+      <SourceProperties RasterXSize="4704" RasterYSize="4437" DataType="Byte" BlockXSize="4704" BlockYSize="1" />
+      <SrcRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+      <DstRect xOff="0" yOff="0" xSize="4704" ySize="4437" />
+    </SimpleSource>
+  </VRTRasterBand>
+</VRTDataset>

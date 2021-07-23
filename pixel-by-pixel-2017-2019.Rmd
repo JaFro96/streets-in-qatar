@@ -1,0 +1,377 @@
+---
+title: "pixel-by-pixel-2017-2021"
+author: "Katharina Hovestadt, Lia Kirsch, Jannis Fröhlking"
+date: "5 7 2021"
+output: html_document
+---
+```{r}
+library(raster)
+library(dplyr)
+```
+
+
+# 2017
+```{r create testarea subsets}
+#qatar_testarea = stack("2021/files/20170422_062109_1030_3B_Visual_clip.tif")
+qatar_testarea = stack("testarea_unet/doha_2017.tif")
+
+# Crashes the r Session
+raster_cropped_17 <- dl_subsets(inputrst = qatar_testarea, targetsize = c(448,448), targetdir = "testarea_unet/2017_subsets/")
+```
+
+
+```{r}
+test_dataset_17 <- dl_prepare_data(train = F,predict = T,subsets_path="./testarea_unet/2017_subsets/",model_input_shape = c(448,448),batch_size = 5L)
+
+system.time(predictions_17 <- predict(pretrained_unet,test_dataset_17))
+```
+
+```{r}
+#test_dataset <- dl_prepare_data(train = F,predict = T,subsets_path="./testarea_unet/2017_subsets/",model_input_shape = c(448,448),batch_size = 5L)
+#predictions_big <- predict(pretrained_unet, stack("testarea_unet/doha_2021_test.tif"))
+```
+
+
+```{r rebuild_img}
+
+rebuild_img <- function(pred_subsets,out_path,target_rst){
+  require(raster)
+  require(gdalUtils)
+  require(stars)
+  
+  
+  subset_pixels_x <- ncol(pred_subsets[1,,,])
+  subset_pixels_y <- nrow(pred_subsets[1,,,])
+  tiles_rows <- nrow(target_rst)/subset_pixels_y
+  tiles_cols <- ncol(target_rst)/subset_pixels_x
+  
+  # load target image to determine dimensions
+   target_stars <- st_as_stars(target_rst,proxy=F)
+   #prepare subfolder for output
+   result_folder <- paste0(out_path,"out")
+   if(dir.exists(result_folder)){
+     unlink(result_folder,recursive = T)
+   }
+   dir.create(path = result_folder)
+   
+  #for each tile, create a stars from corresponding predictions, 
+  #assign dimensions using original/target image, and save as tif: 
+  for (crow in 1:tiles_rows){
+    for (ccol in 1:tiles_cols){
+      i <- (crow-1)*floor(tiles_cols) + (ccol-1) +1 
+      
+      dimx <- c(((ccol-1)*subset_pixels_x+1),(ccol*subset_pixels_x))
+      dimy <- c(((crow-1)*subset_pixels_y+1),(crow*subset_pixels_y))
+      cstars <- st_as_stars(t(pred_subsets[i,,,1]))
+      attr(cstars,"dimensions")[[2]]$delta=-1
+      #set dimensions using original raster
+      st_dimensions(cstars) <- st_dimensions(target_stars[,dimx[1]:dimx[2],dimy[1]:dimy[2]])[1:2]
+     
+      write_stars(cstars,dsn = paste0(result_folder,"/_out_",i,".tif")) 
+    }
+  }
+  
+  starstiles <- as.vector(list.files(result_folder,full.names = T),mode = "character")
+  gdalbuildvrt(starstiles,paste0(result_folder,"/mosaic.vrt"))
+  gdalwarp(paste0(result_folder,"/mosaic.vrt"), paste0(result_folder,"/mosaic.tif"))
+}
+
+```
+
+## Final prediction result
+
+Let´s check the result on the map. We will again use the method for reassembling the subsets to the final map, which you will see later.
+
+```{r,echo=F,warning=F, message=F,results=F}
+input_img <- stack("testarea_unet/doha_2017.tif")
+rebuild_img(predictions_17,out_path = "./testarea_unet/2017_",target_rst = raster_cropped_17)
+
+result_map <- raster("./testarea_unet/2017_out/mosaic.tif")%>%readAll()
+hist(values(result_map), main='Street Preditiction Values in 2017')
+result_map_0.3NA = result_map
+result_map_0.3NA[result_map_0.3NA[[1]]<0.3] <- NA
+
+# histogram
+hist(values(result_map_0.3NA), main = "Classified Street Pixels in 2017")
+``` 
+```{r ways to detect differences}
+# cell stats
+cellStats(result_map, "sum")
+cellStats(result_map, stat='mean', na.rm=TRUE, asSample=TRUE)
+
+#standard deviation
+
+# values > 0.3 -> 1, values <0.3 -> 0
+# count numbers
+result_map_0.3 =  result_map
+result_map_0.3[result_map_0.3[[1]]<0.3] <- 0
+result_map_0.3[result_map_0.3[[1]]>0.3] <- 1
+cellStats(result_map_0.3, "sum")
+```
+
+
+
+```{r,echo=F,warning=F, message=F,results=T,out.width="100%"}
+viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
+  #mapview(result_map,layer.name="street prediction", alpha.regions=0.4,na.alpha=0)
+  mapview(result_map,layer.name="street prediction in Doha in 2017", alpha.regions=1,na.alpha=0)
+```
+
+```{r compare train and test image}
+plotRGB(input_img, main = "Test area", axes = TRUE,r=1,b=3)
+train_img <- stack("Bahrain_2021_3Band/bahrain_2021.tif")
+plotRGB(train_img, main = "Train area", axes = TRUE,r=1,b=3)
+```
+
+
+## Inspecting your network
+```{r visualizing_activations}
+
+plot_layer_activations <- function(img_path, model, activations_layers,channels){
+  
+ 
+  model_input_size <- c(model$input_shape[[2]], model$input_shape[[3]]) 
+  
+  #preprocess image for the model
+  img <- image_load(img_path, target_size =  model_input_size) %>%
+    image_to_array() %>%
+    array_reshape(dim = c(1, model_input_size[1], model_input_size[2], 3)) %>%
+    imagenet_preprocess_input()
+  
+  layer_outputs <- lapply(model$layers[activations_layers], function(layer) layer$output)
+  activation_model <- keras_model(inputs = model$input, outputs = layer_outputs)
+  activations <- predict(activation_model,img)
+  if(!is.list(activations)){
+    activations <- list(activations)
+  }
+  
+  #function for plotting one channel of a layer, adopted from: Chollet (2018): "Deep learning with R"
+  plot_channel <- function(channel,layer_name,channel_name) {
+    rotate <- function(x) t(apply(x, 2, rev))
+    image(rotate(channel), axes = FALSE, asp = 1,
+          col = terrain.colors(12),main=paste("layer:",layer_name,"channel:",channel_name))
+  }
+  
+  for (i in 1:length(activations)) {
+    layer_activation <- activations[[i]]
+    layer_name <- model$layers[[activations_layers[i]]]$name
+    n_features <- dim(layer_activation)[[4]]
+    for (c in channels){
+      
+      channel_image <- layer_activation[1,,,c]
+      plot_channel(channel_image,layer_name,c)
+      
+    }
+  } 
+  
+}
+
+```
+
+
+```{r}
+par(mfrow=c(1,1))
+plot(read_stars("./testarea_unet/2017_subsets/25.jpg"),rgb=c(1,2,3))
+
+#visualize layers 3 and 10, channels 1 to 20
+par(mfrow=c(3,4),mar=c(1,1,1,1),cex=0.5)
+plot_layer_activations(img_path = "./testarea_unet/2017_subsets/25.jpg", model=pretrained_unet ,activations_layers = c(2,3,5,6,8,9,10,12,13,14), channels = 1:4)
+```
+
+# 2021
+
+
+```{r create testarea subsets}
+#qatar_testarea = stack("2021/files/20170422_062109_1030_3B_Visual_clip.tif")
+qatar_testarea = stack("testarea_unet/doha_2021.tif")
+
+# Crashes the r Session
+raster_cropped_21 <- dl_subsets(inputrst = qatar_testarea, targetsize = c(448,448), targetdir = "testarea_unet/2021_subsets/")
+```
+
+
+```{r}
+test_dataset_21 <- dl_prepare_data(train = F,predict = T,subsets_path="./testarea_unet/2021_subsets/",model_input_shape = c(448,448),batch_size = 5L)
+
+system.time(predictions_21 <- predict(pretrained_unet,test_dataset_21))
+```
+
+```{r, echo=F,warning=F, message=F,results=F}
+result_map <- raster("./testarea_unet/2019_out/mosaic.tif")%>%readAll()
+hist(result_map, main='Street Preditiction Values in 2019')
+
+result_map_0.3NA = result_map
+result_map_0.3NA[result_map_0.3NA[[1]]<0.3] <- NA
+hist(values(result_map_0.3NA), main = "Classified Street Pixels in 2019",col="green")
+``` 
+
+## Final prediction result
+
+Let´s check the result on the map. We will again use the method for reassembling the subsets to the final map, which you will see later.
+
+```{r,echo=F,warning=F, message=F,results=F}
+input_img <- stack("testarea_unet/doha_2021.tif")
+rebuild_img(predictions_21,out_path = "./testarea_unet/2021_",target_rst = raster_cropped_21)
+
+result_map <- raster("./testarea_unet/2021_out/mosaic.tif")%>%readAll()
+hist(values(result_map), main='Street Preditiction Values in 2021')
+result_map_0.3NA = result_map
+result_map_0.3NA[result_map_0.3NA[[1]]<0.3] <- NA
+hist(values(result_map_0.3NA), main = "Classified Street Pixels in 2021")
+``` 
+```{r ways to detect differences}
+# histogram
+#hist(values(result_map_0.3NA))
+# cell stats
+cellStats(result_map, "sum")
+cellStats(result_map, stat='mean', na.rm=TRUE, asSample=TRUE)
+
+#standard deviation
+
+# values > 0.3 -> 1, values <0.3 -> 0
+# count numbers
+result_map_0.3 =  result_map[result_map[[1]]<0.3] <- 0
+result_map_0.3 = result_map_0.3[result_map_0.3[[1]]>0.3] <- 1
+#cellStats(result_map_0.3, "sum")
+```
+
+```{r compare histograms}
+result_map_21 <- raster("./testarea_unet/2021_out/mosaic.tif")%>%readAll()
+result_map_21_0.3NA = result_map_21
+result_map_21_0.3NA[result_map_21_0.3NA[[1]]<0.3] <- NA
+hist(values(result_map_21_0.3NA), main = "Classified Street Pixels comparison",col = rgb(0, 1, 0, 0.5),xlab="street probability")
+
+result_map_17 <- raster("./testarea_unet/2017_out/mosaic.tif")%>%readAll()
+result_map_17_0.3NA = result_map_17
+result_map_17_0.3NA[result_map_17_0.3NA[[1]]<0.3] <- NA
+hist(values(result_map_17_0.3NA),col = rgb(0, 0, 1, 0.5), add = TRUE)
+
+result_map_19 <- raster("./testarea_unet/2019_out/mosaic.tif")%>%readAll()
+result_map_19_0.3NA = result_map_19
+result_map_19_0.3NA[result_map_19_0.3NA[[1]]<0.3] <- NA
+hist(values(result_map_19_0.3NA),col = rgb(1, 0, 0, 0.5), add = TRUE)
+
+legend("topright", inset=.02, title="Year",
+   c("2017","2019","2021"), fill=c(rgb(0, 0, 1, 0.5),rgb(1, 0, 0, 0.5),rgb(0, 1, 0, 0.5)), horiz=TRUE, cex=0.8)
+```
+
+
+```{r,echo=F,warning=F, message=F,results=T,out.width="100%"}
+viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
+  #mapview(result_map,layer.name="street prediction", alpha.regions=0.4,na.alpha=0)
+  mapview(result_map,layer.name="street prediction in Doha 2021", alpha.regions=1,na.alpha=0)
+```
+
+```{r compare train and test image}
+plotRGB(input_img, main = "Test area", axes = TRUE,r=1,b=3)
+train_img <- stack("Bahrain_2021_3Band/bahrain_2021.tif")
+plotRGB(train_img, main = "Train area", axes = TRUE,r=1,b=3)
+```
+
+
+## Inspecting your network
+```{r visualizing_activations}
+
+plot_layer_activations <- function(img_path, model, activations_layers,channels){
+  
+ 
+  model_input_size <- c(model$input_shape[[2]], model$input_shape[[3]]) 
+  
+  #preprocess image for the model
+  img <- image_load(img_path, target_size =  model_input_size) %>%
+    image_to_array() %>%
+    array_reshape(dim = c(1, model_input_size[1], model_input_size[2], 3)) %>%
+    imagenet_preprocess_input()
+  
+  layer_outputs <- lapply(model$layers[activations_layers], function(layer) layer$output)
+  activation_model <- keras_model(inputs = model$input, outputs = layer_outputs)
+  activations <- predict(activation_model,img)
+  if(!is.list(activations)){
+    activations <- list(activations)
+  }
+  
+  #function for plotting one channel of a layer, adopted from: Chollet (2018): "Deep learning with R"
+  plot_channel <- function(channel,layer_name,channel_name) {
+    rotate <- function(x) t(apply(x, 2, rev))
+    image(rotate(channel), axes = FALSE, asp = 1,
+          col = terrain.colors(12),main=paste("layer:",layer_name,"channel:",channel_name))
+  }
+  
+  for (i in 1:length(activations)) {
+    layer_activation <- activations[[i]]
+    layer_name <- model$layers[[activations_layers[i]]]$name
+    n_features <- dim(layer_activation)[[4]]
+    for (c in channels){
+      
+      channel_image <- layer_activation[1,,,c]
+      plot_channel(channel_image,layer_name,c)
+      
+    }
+  } 
+  
+}
+
+```
+
+
+```{r}
+par(mfrow=c(1,1))
+plot(read_stars("./testarea_unet/2021_subsets/25.jpg"),rgb=c(1,2,3))
+
+#visualize layers 3 and 10, channels 1 to 20
+par(mfrow=c(3,4),mar=c(1,1,1,1),cex=0.5)
+plot_layer_activations(img_path = "./testarea_unet/2021_subsets/25.jpg", model=pretrained_unet ,activations_layers = c(2,3,5,6,8,9,10,12,13,14), channels = 1:4)
+```
+
+
+```{r,echo=F,warning=F, message=F,results=T,out.width="100%"}
+result_map2017 <- raster("./testarea_unet/2017_out/mosaic.tif")%>%readAll()
+result_map2019 <- raster("./testarea_unet/2019_out/mosaic.tif")%>%readAll()
+result_map2021 <- raster("./testarea_unet/2021_out/mosaic.tif")%>%readAll()
+#viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
+  #mapview(result_map,layer.name="street prediction", alpha.regions=0.4,na.alpha=0)
+  mapview(result_map2017,layer.name="street prediction in Doha 2017", alpha.regions=1,na.alpha=0)+
+  mapview(result_map2019,layer.name="street prediction in Doha 2019", alpha.regions=1,na.alpha=0)+
+  mapview(result_map2021,layer.name="street prediction in Doha 2021", alpha.regions=1,na.alpha=0)
+```
+
+```{r}
+plot(result_map2017, main = "2017")
+plot(result_map2019, main = "2019")
+plot(result_map2021, main = "2021")
+
+plot(result_map2021- result_map2017, main = "2017 to 2021")
+plot(result_map2021- result_map2019, main = "2019 to 2021")
+
+
+result_map_2017_binary = result_map2017
+result_map_2017_binary[result_map_2017_binary>=0.3] = 1
+result_map_2017_binary[result_map_2017_binary<0.3] = 0
+
+result_map_2019_binary = result_map2019
+result_map_2019_binary[result_map_2019_binary>=0.3] = 1
+result_map_2019_binary[result_map_2019_binary<0.3] = 0
+
+result_map_2021_binary = result_map2021
+result_map_2021_binary[result_map_2021_binary>=0.3] = 1
+result_map_2021_binary[result_map_2021_binary<0.3] = 0
+
+plot(result_map_2017_binary, main = "2017", legend = FALSE)
+plot(result_map_2019_binary, main = "2019", legend = FALSE)
+plot(result_map_2021_binary, main = "2021", legend = FALSE)
+
+plot(result_map_2021_binary - result_map_2017_binary, main="2017 - 2021", legend = FALSE)
+plot(result_map_2021_binary - result_map_2019_binary, main="2019 - 2021", legend = FALSE)
+plot(result_map_2019_binary - result_map_2017_binary, main="2017 - 2019", legend = FALSE)
+```
+
+```{r}
+# compare pixel sums
+result_map_2021_binary
+sum(values(result_map_2021_binary)) / sum(values(result_map_2017_binary))
+
+sum(values(result_map_2021_binary)) / sum(values(result_map_2019_binary))
+
+sum(values(result_map_2019_binary)) / sum(values(result_map_2017_binary))
+```
+
