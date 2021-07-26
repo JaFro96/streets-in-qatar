@@ -11,7 +11,7 @@ output:
 
 ```{r standardize output, include=FALSE}
 library(knitr)
-opts_chunk$set(message=FALSE, warning=FALSE, echo=FALSE, fig.width = 7, fig.height = 7, fig.align = "center")
+opts_chunk$set(message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE, fig.width = 7, fig.height = 7, fig.align = "center")
 ```
 
 ```{r env, results=F,warning=F,message=F}
