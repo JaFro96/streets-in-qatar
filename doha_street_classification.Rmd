@@ -55,7 +55,7 @@ setNAs <- function(test_tile){
 ```{r merge single raster images}
 # Set path to folder containing Planet satellite images of Bahrain
 if(!file.exists("data/training_unet/bahrain_2021.tif")){
-  setwd("Bahrain_2021_3Band/files")
+  setwd("data/Bahrain_2021_3Band/files")
   files = list.files(pattern = ".tif$")
   filesList = as.list(files)
   stackList = lapply(filesList, stack)
@@ -67,7 +67,7 @@ if(!file.exists("data/training_unet/bahrain_2021.tif")){
 
 
 if(!file.exists("data/testarea_unet/doha_2021.tif")){
-  setwd("2021/files")
+  setwd("data/20212files")
   files = list.files(pattern = ".tif$")
   filesList = as.list(files)
   stackList = lapply(filesList, stack)
@@ -78,7 +78,7 @@ if(!file.exists("data/testarea_unet/doha_2021.tif")){
 }
 
 if(!file.exists("data/testarea_unet/doha_2019.tif")){
-  setwd("2019/files")
+  setwd("data/2019/files")
   files = list.files(pattern = ".tif$")
   filesList = as.list(files)
   stackList = lapply(filesList, stack)
@@ -89,7 +89,7 @@ if(!file.exists("data/testarea_unet/doha_2019.tif")){
 }
 
 if(!file.exists("data/testarea_unet/doha_2017.tif")){
-  setwd("2017/files")
+  setwd("data/2017/files")
   files = list.files(pattern = ".tif$")
   filesList = as.list(files)
   stackList = lapply(filesList, stack)
@@ -237,9 +237,9 @@ plot(inputrst_mask, col=c("white","black"))
 if(file.exists("data/testarea_unet/doha_2021.tif")){
   plotRGB(stack("data/testarea_unet/doha_2021.tif"),r=1,b=3)
 }else{
-  test_files = list.files("2021/files", pattern = ".tif$")
+  test_files = list.files("data/2021/files", pattern = ".tif$")
   # put tiles into a list of raster stacks
-  setwd("2021/files")
+  setwd("data/2021/files")
   stackList_test = lapply(test_files, stack)
 
   # test one image
@@ -719,7 +719,7 @@ viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
 
 ```{r compare train and test image}
 plotRGB(input_img, main = "Test area", axes = TRUE,r=1,b=3)
-train_img <- stack("Bahrain_2021_3Band/bahrain_2021.tif")
+train_img <- stack("data/Bahrain_2021_3Band/bahrain_2021.tif")
 plotRGB(train_img, main = "Train area", axes = TRUE,r=1,b=3)
 ```
 
@@ -781,7 +781,7 @@ plot_layer_activations(img_path = "./data/testarea_unet/2019_subsets/25.jpg", mo
 
 # 2017
 ```{r create testarea subsets}
-#qatar_testarea = stack("2021/files/20170422_062109_1030_3B_Visual_clip.tif")
+#qatar_testarea = stack("data/2021/files/20170422_062109_1030_3B_Visual_clip.tif")
 qatar_testarea = stack("data/testarea_unet/doha_2017.tif")
 
 # Crashes the r Session
@@ -883,7 +883,7 @@ viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
 
 ```{r compare train and test image}
 plotRGB(input_img, main = "Test area", axes = TRUE,r=1,b=3)
-train_img <- stack("Bahrain_2021_3Band/bahrain_2021.tif")
+train_img <- stack("data/Bahrain_2021_3Band/bahrain_2021.tif")
 plotRGB(train_img, main = "Train area", axes = TRUE,r=1,b=3)
 ```
 
@@ -946,7 +946,7 @@ plot_layer_activations(img_path = "./data/testarea_unet/2017_subsets/25.jpg", mo
 
 
 ```{r create testarea subsets}
-#qatar_testarea = stack("2021/files/20170422_062109_1030_3B_Visual_clip.tif")
+#qatar_testarea = stack("data/2021/files/20170422_062109_1030_3B_Visual_clip.tif")
 qatar_testarea = stack("data/testarea_unet/doha_2021.tif")
 
 # Crashes the r Session
@@ -1028,7 +1028,7 @@ viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
 
 ```{r compare train and test image}
 plotRGB(input_img, main = "Test area", axes = TRUE,r=1,b=3)
-train_img <- stack("Bahrain_2021_3Band/bahrain_2021.tif")
+train_img <- stack("data/Bahrain_2021_3Band/bahrain_2021.tif")
 plotRGB(train_img, main = "Train area", axes = TRUE,r=1,b=3)
 ```
 
