@@ -15,7 +15,7 @@ library(knitr)
 opts_chunk$set(message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE, fig.width = 7, fig.height = 7, fig.align = "center")
 ```
 
-```{r env, results=F,warning=F,message=F}
+```{r env, results=F,warning=F,message=F, eval=T}
 library(keras)
 library(tensorflow)
 library(tfdatasets)
@@ -60,8 +60,16 @@ Since a model was built the goals was to understand how to built, train and pred
 ## Data
 
 ### Nano Satellite Images
-The images used for model training and prediction were created by nano satellites from Planet and are provided by them as PSScene3Band products, which have a spatial resolution of 3 x 3 meter. We used a spatial extent located in Bahrain to train the image. The image is a visual product from the 28th of April, 2021. For prediction and comparison we used images around the Khalifa International Stadium, Doha (Qatar) every two years from 2017. To exclude seasonal irregularities we stuck to images of March and April (2017-04-22, 2019-03-27, 2021-03-18). 
-Add Plot of Bahrain rgb and one Doha rgb.
+The images used for model training and prediction were created by nano satellites from Planet and are provided by them as PSScene3Band products, which have a spatial resolution of 3 x 3 meter. We used a spatial extent located in Bahrain to train the image. The image is a visual product from the 28th of April, 2021. 
+```{r plot of Bahrain, eval = TRUE, echo=FALSE}
+plotRGB(stack("data/Bahrain_2021_3Band/bahrain_2021.tif"), main="Bahrain")
+```
+For prediction and comparison we used images around the Khalifa International Stadium, Doha (Qatar) every two years from 2017. To exclude seasonal irregularities we stuck to images of March and April (2017-04-22, 2019-03-27, 2021-03-18). Below the image of 2021 is plotted.
+
+```{r plot doha rgb, eval = T, echo = F}
+plotRGB(stack("data/testarea_unet/doha_2021.tif"), main="Bahrain")
+```
+
 
 
 ### Street network vectors
