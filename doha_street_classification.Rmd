@@ -229,6 +229,7 @@ writeRaster(result, "data/training_unet/street_mask.tif", overwrite = TRUE)
 ```
 
 The white areas on the figure show the streets (TRUE) while black areas have no streets (FALSE). Bigger streets have a bigger size than smaller streets due to the buffering in the processing.
+
 ![Ground truth mask for streets in Bahrain](images/street_mask.jpg)
 
 ## Create Subsets
@@ -1173,10 +1174,26 @@ In the image 'Classified Street Pixels comparison' it can be seen that street pi
 ![Comparision of street detection of 2019 and 2021](images/2019 to 2021 binary.png)
 
 The 2017- 2019, 2017-2021, and 2019-2021 images show the change between a newly added road (dark green) to roads that are no longer there (white). Again, it is noticeable that the number of dark green roads is higher in 2017-2021 and 2019-2021. The value between 2017-2021 seems to be justified with the boom between 2019-2021. Furthermore, it is noticeable that some roads are classified as a change to no road, which are again labeled as new roads in later years. From 2017-2021 east of the stadium, another main road seems to occur. In the western part indications of a settlement structure can be seen.
-Overall, it is noticeable that around the stadium an intesivisation and densification of streets can be seen. 
+Overall, it is noticeable that around the stadium an intensivisation and densification of streets can be seen. 
 
-# Discussion/Conclusion
-Comparing the different years, it is noticeable that some roads were classified as a change between road to no road. With more time it would be interesting to find out whether this classification is due to the selected satellite image and given inaccuracies, whether there is an error in the algorithm, or whether it is an actual ablation of the road. 
+![Satellite image from Doha 2017](images/doha_2017.PNG)
+
+![Satellite image from Doha 2021](images/doha_2021.PNG)
+
+The satellite images from 2017 (Fig. 4) and 2021 (Fig. 5) show that especially the horizontal main road in the north of the Khalifa stadium was under construction in 2017 abd finished in 2021. This is visible in our 2017-2021 
+plot. 
+
+
+The removed streets on the top right of figure 4 are displayed in our prediction as well. The road got extended to a highway, so roundabouts and junctions got removed.
+
+A new street area in the west of the stadium can be partly seen in our prediction-difference plots. This shows an opportunity to enhance our model and to calibrate and train it in a more detailed way.
+This applies as well for streets in residential areas. Here might be differences because of streets that are made from soil and sand instead of asphalt. So, it is harder to distinguish the street from other areas. A second suggestion is, that the 3m resolution of the Planet satellite images is not enough. A street might be less then 3m and cannot be detected or is influenced, e.g. by a house standing next to it and sharing the same pixel. Depending on the inclination angle of the satellite, houses, trees and other high things might cover the street at some parts, so the pixel cannot be identified as a street in 2017. In 2021 there was a different angle and different pixels could be identified.
+
+
+
+# Conclusion
+Our model is able to detect streets and changes in the street infrastructure in a desert state like Qatar. It is able to show areas where streets were removed and where streets were build. Only the residential areas could be improved. However, this is most likely not a bug in our model but a problem in the satellite data such as covering, subsurface and tilt angle for solar radiation.
+
 # Lessons Learned
 Our group chose the study project mainly because we did not have the opportunity to work with deep learning during our study time. We were very interested in how to set up such a network. 
 In previous courses we were able to run unsupervised and supervised classifications but usually in a very small area.
