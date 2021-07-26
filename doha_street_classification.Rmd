@@ -102,6 +102,7 @@ During the semester we usually met every Monday at 10am to work together on the 
 
 
 # Results
+## Process Satellite Images
 ```{r function to preprocess satellite tiles}
 # Preprocess satellite images
 setNAs <- function(test_tile){
@@ -163,6 +164,8 @@ if(!file.exists("data/testarea_unet/doha_2017.tif")){
 }
 ```
 
+## Create Street Mask
+
 ```{r crop street shapefile to satellite image}
 # Preprocess street shapefile
 # load planet image of train area
@@ -217,6 +220,9 @@ result = max(x_poly,x)
 writeRaster(result, "data/training_unet/street_mask.tif", overwrite = TRUE)
 ```
 
+![Ground truth mask for streets in Bahrain](images/street_mask.jpg)
+
+## Create Subsets
 ```{r, dl_subsets}
 # Create subsets for the unet training
 dl_subsets <- function(inputrst, targetsize, targetdir, targetname="", img_info_only = FALSE, is_mask = FALSE){
@@ -328,6 +334,7 @@ raster_cropped <- dl_subsets(inputrst = qatar_testarea, targetsize = c(448,448),
 print("Testarea subset creation done!")
 ```
 
+### Create Model
 ```{r simple_Unet}
 ## Pixelwise classification of streets in Doha, Qatar
 ## From image to pixel-by-pixel classification
@@ -636,6 +643,9 @@ plot(diagnostics)
 
 ```
 
+![Diagonstics of model training](images/diagnostics.png)
+![Prediciton sample, left image is ground truth, image in the middle is the input subset of Bahrain, image on the right is the prediction](images/prediction_sample.png)
+
 ```{r save model}
 save_model_hdf5(pretrained_unet,filepath = "./pretrained_unet.h5")
 ```
@@ -644,7 +654,7 @@ save_model_hdf5(pretrained_unet,filepath = "./pretrained_unet.h5")
 pretrained_unet <- load_model_hdf5("./pretrained_unet.h5")
 ```
 
-
+## Predict for 2019 
 ```{r}
 sample <- floor(runif(n = 1,min = 1,max = 4))
   img_path <- as.character(testing(files)[[sample,1]])
@@ -747,6 +757,7 @@ result_map_0.3[result_map_0.3[[1]]<0.3] <- 0
 result_map_0.3[result_map_0.3[[1]]>0.3] <- 1
 cellStats(result_map_0.3, "sum")
 ```
+
 ```{r,echo=F,warning=F, message=F,results=T,out.width="100%"}
 viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
   #mapview(result_map,layer.name="street prediction", alpha.regions=0.4,na.alpha=0)
@@ -816,6 +827,13 @@ plot(read_stars("./data/testarea_unet/2019_subsets/25.jpg"),rgb=c(1,2,3))
 par(mfrow=c(3,4),mar=c(1,1,1,1),cex=0.5)
 plot_layer_activations(img_path = "./data/testarea_unet/2019_subsets/25.jpg", model=pretrained_unet ,activations_layers = c(2,3,5,6,8,9,10,12,13,14), channels = 1:4)
 ```
+
+![Prediction for 2019](images/2019_prediction.png)
+![Binary Prediction for 2019 with threshold 0.3](images/2019_binary_prediction.png)
+
+
+
+## Predict for 2017
 
 ```{r create testarea subsets 2017}
 # Street Prediction for 2017
@@ -931,6 +949,9 @@ par(mfrow=c(3,4),mar=c(1,1,1,1),cex=0.5)
 plot_layer_activations(img_path = "./data/testarea_unet/2017_subsets/25.jpg", model=pretrained_unet ,activations_layers = c(2,3,5,6,8,9,10,12,13,14), channels = 1:4)
 ```
 
+![Prediction for 2017](images/2017_prediction.png)
+![Binary Prediction for 2017 with threshold 0.3](images/2017_binary_prediction.png)
+
 ## Street Prediction for 2021
 ```{r create testarea subsets 2021}
 #qatar_testarea = stack("data/2021/files/20170422_062109_1030_3B_Visual_clip.tif")
@@ -985,7 +1006,10 @@ result_map_0.3 = result_map_0.3[result_map_0.3[[1]]>0.3] <- 1
 #cellStats(result_map_0.3, "sum")
 ```
 
-## Compare Historgrams
+![Prediction for 2019](images/2021_prediction.png)
+![Binary Prediction for 2021 with threshold 0.3](images/2021_binary_prediction.png) 
+
+## Compare Histograms
 ```{r compare histogram}
 result_map_21 <- raster("./data/testarea_unet/2021_out/mosaic.tif")%>%readAll()
 result_map_21_0.3NA = result_map_21
@@ -1124,7 +1148,9 @@ sum(values(result_map_2021_binary)) / sum(values(result_map_2019_binary))
 sum(values(result_map_2019_binary)) / sum(values(result_map_2017_binary))
 ```
 
-
+![Comparision of street detection of 2017 and 2019](images/2017 to 2019 binary.png)
+![Comparision of street detection of 2017 and 2021](images/2017 to 2021 binary.png)
+![Comparision of street detection of 2019 and 2021](images/2019 to 2021 binary.png)
 
 # Discussion/Conclusion
 
