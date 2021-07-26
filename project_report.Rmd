@@ -112,7 +112,7 @@ streets = st_crop(streets_utm, st_bbox(st_bahrain))
 
 
 #### Rasterize streets shapefile
-```{r rasterization of all roads}
+```{r rasterization of all roads with same width}
 # creates a SpatVector object
 v_lines = vect(streets)
 # prere the output raster size
@@ -139,7 +139,7 @@ st_geometry(poly_streets[poly_streets$fclass == "secondary",]) = st_geometry(st_
 st_geometry(poly_streets[poly_streets$fclass == "tertiary",]) = st_geometry(st_buffer(tertiaries, dist = 3))
 ```
 
-```{r rasterization of main roads}
+```{r rasterization of all roads with varying width}
 v_poly = vect(poly_streets)
 r_poly = rast(v_poly, ncol = ncol(st_bahrain), nrow = nrow(st_bahrain), extent = ext(x))
 x_poly <- rasterize(v_poly, r_poly, touches = TRUE, background = 0)
