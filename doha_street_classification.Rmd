@@ -1168,9 +1168,15 @@ sum(values(result_map_2021_binary)) / sum(values(result_map_2019_binary))
 sum(values(result_map_2019_binary)) / sum(values(result_map_2017_binary))
 ```
 
+![Comparison of classified street pixels](images/hist_compared.png)
+In the image 'Classified Street Pixels comparison' it can be seen that street pixels have more than doubled from 2021 - 2017 and are stable between 2017 and 2019. This leads to the assumption that there must be a construction boom between 2019 and 2021. This assumption is solidified when analyzing at the images below.
+
 ![Comparision of street detection of 2017 and 2019](images/2017 to 2019 binary.png)
 ![Comparision of street detection of 2017 and 2021](images/2017 to 2021 binary.png)
 ![Comparision of street detection of 2019 and 2021](images/2019 to 2021 binary.png)
+
+The 2017- 2019, 2017-2021, and 2019-2021 images show the change between a newly added road (dark green) to roads that are no longer there (white). Again, it is noticeable that the number of dark green roads is higher in 2017-2021 and 2019-2021. The value between 2017-2021 seems to be justified with the boom between 2019-2021. Furthermore, it is noticeable that some roads are classified as a change to no road, which are again labeled as new roads in later years. From 2017-2021 east of the stadium, another main road seems to occur. In the western part indications of a settlement structure can be seen.
+Overall, it is noticeable that around the stadium an intesivisation and densification of streets can be seen. 
 
 # Discussion/Conclusion
 
