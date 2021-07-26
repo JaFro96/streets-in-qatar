@@ -2,6 +2,7 @@
 title: "Project report - Deep Learning for the Analysis of Remote Sensing Imagery from Nano Satellites"
 author: "Katharina Hovestadt (440 289), Lia Kirsch (437 494), Jannis Fröhlking (439 599)"
 date: "31 7 2021"
+bibliography: references.bib
 output:
   html_document:
     toc: true
@@ -54,8 +55,10 @@ The aim of this project was the detection of streets around the Khalifa Internat
 
 Since a model was built the goals was to understand how to built, train and predict with it, The aim was to understand how to set up a model and furthermore to understand which validation methods are suitable for a good prediction. As an overarching goal the understanding of a deep learning factor must be mentioned.
 
-#Methods
+# Methods
+
 ## Data
+
 ### Nano Satellite Images
 The images used for model training and prediction were created by nano satellites from Planet and are provided by them as PSScene3Band products, which have a spatial resolution of 3 x 3 meter. We used a spatial extent located in Bahrain to train the image. The image is a visual product from the 28th of April, 2021. For prediction and comparison we used images around the Khalifa International Stadium, Doha (Qatar) every two years from 2017. To exclude seasonal irregularities we stuck to images of March and April (2017-04-22, 2019-03-27, 2021-03-18). 
 Add Plot of Bahrain rgb and one Doha rgb.
@@ -72,7 +75,7 @@ Add street mask plot.
 
 
 ## Model building
-The model building workflow follows the pixel-by-pixel classification part of the tutorial “Introduction to Deep Learning in R for the Analysis of UAV-based Remote Sensing Data“ by Christian Knoth. This allows for the localisation of desired features in a target image based on a U-net architecture (Ronneberger). The architecture consists of two parts. The first part is the contracting path, which extracts spatial patterns and is made of convolutional and maxpooling layers. In the second part, the expansive path, the maps of spatial patterns are resampled back to the resolution of the input image by convolutional and upsampling layers combined with concatenated layers of the original patterns.
+The model building workflow follows the pixel-by-pixel classification part of the tutorial “Introduction to Deep Learning in R for the Analysis of UAV-based Remote Sensing Data“ by Christian Knoth. This allows for the localisation of desired features in a target image based on a U-net architecture [@OlafRonneberger.2015]. The architecture consists of two parts. The first part is the contracting path, which extracts spatial patterns and is made of convolutional and maxpooling layers. In the second part, the expansive path, the maps of spatial patterns are resampled back to the resolution of the input image by convolutional and upsampling layers combined with concatenated layers of the original patterns.
 The build model was trained on 70% of the training data and validated on the remaining 30% in 15 epochs. 
 
 ## Classification
@@ -86,7 +89,7 @@ To detect a growth of infrastructure, we chose streets as indicators. Whenever a
 We planned to detect the streets with a binary classification. In a second step we wanted to do a more specific multiclass detection of streets, water, and recreation areas.
 We decided to have an eye on images in 2017, 2019 and 2021. 
 
-We introduced ourselves to the classification with convolutional neuronal networks using u-net and tensorflow with the guide of the OGH Summer School 2020 (https://dachro.github.io/ogh_summer_school_2020/Tutorial_DL_UAV.html). With this training we were able to establish a model for our binary classification.
+We introduced ourselves to the classification with convolutional neuronal networks using u-net and tensorflow with the guide of the OGH Summer School 2020 [@ChristianKnoth.2020]. With this training we were able to establish a model for our binary classification.
 We realized that we need a second area for training of our model. We decided to train with data from Bahrain and were able to use OSM street data as our ground truth. We were able to train our model in time. 
 
 
@@ -99,17 +102,8 @@ During the semester we usually met every Monday at 10am to work together on the 
 
 
 # Results
-## Data
-
-What you need:
-- planet 3 band images of train region (Bahrain)
-- planet 3 band images of study region (Qatar)
-- osm shapefile containing streets of Bahrain @see: [Link to OSM download]
-
-## Train data
-
-### Preprocess satellite images
 ```{r function to preprocess satellite tiles}
+# Preprocess satellite images
 setNAs <- function(test_tile){
   # set zero values to NA
   test_tile[test_tile[]==0] <- NA
@@ -169,8 +163,8 @@ if(!file.exists("data/testarea_unet/doha_2017.tif")){
 }
 ```
 
-### Preprocess street shapefile
 ```{r crop street shapefile to satellite image}
+# Preprocess street shapefile
 # load planet image of train area
 st_bahrain = stack("data/training_unet/bahrain_2021.tif")
 # load openstreetmap data of the streegts
@@ -180,9 +174,8 @@ streets_utm = st_transform(streets_all, crs = crs(st_bahrain))
 streets = st_crop(streets_utm, st_bbox(st_bahrain))
 ```
 
-
-#### Rasterize streets shapefile
 ```{r rasterization of all roads with same width}
+# Rasterize streets shapefile
 # creates a SpatVector object
 v_lines = vect(streets)
 # prepare the output raster size
@@ -193,9 +186,8 @@ plot(x, col = c("white","black"), axes = FALSE, legend = FALSE)
 plotRGB(st_bahrain, r = 1, g=2, b=3)
 ```
 
-
-Buffer streets to get better rasterization result, because main roads have a higher width
 ```{r buffer}
+# Buffer streets to get better rasterization result, because main roads have a higher width
 primaries = streets[streets$fclass == "primary",]
 secondaries = streets[streets$fclass == "secondary",]
 tertiaries = streets[streets$fclass == "tertiary",]
@@ -219,14 +211,14 @@ plot(x, col =c("white","black"), axes = FALSE, legend = FALSE)
 plotRGB(st_bahrain, r = 1, g=2, b=3)
 ```
 
-Combine resulting two raster layers
 ```{r combine resulting rasters}
+# Combine resulting two raster layers
 result = max(x_poly,x)
 writeRaster(result, "data/training_unet/street_mask.tif", overwrite = TRUE)
 ```
 
-### Create subsets for the unet training
 ```{r, dl_subsets}
+# Create subsets for the unet training
 dl_subsets <- function(inputrst, targetsize, targetdir, targetname="", img_info_only = FALSE, is_mask = FALSE){
   require(jpeg)
   require(raster)
@@ -301,8 +293,8 @@ plot(inputrst_mask, col=c("white","black"))
 #dl_subsets(inputrst = inputrst_mask, targetsize = c(448,448), targetdir = "data/training_unet/masks/")
 ```
 
-## Test area
 ```{r mosaic testarea}
+#  Test area
 if(file.exists("data/testarea_unet/doha_2021.tif")){
   plotRGB(stack("data/testarea_unet/doha_2021.tif"),r=1,b=3)
 }else{
@@ -327,7 +319,6 @@ if(file.exists("data/testarea_unet/doha_2021.tif")){
 }
 ```
 
-
 ```{r create testarea subsets 2019}
 qatar_testarea = stack("data/testarea_unet/doha_2019.tif")
 
@@ -337,11 +328,9 @@ raster_cropped <- dl_subsets(inputrst = qatar_testarea, targetsize = c(448,448),
 print("Testarea subset creation done!")
 ```
 
-
-# Pixelwise classification of streets in Doha, Qatar
-
-## From image to pixel-by-pixel classification
 ```{r simple_Unet}
+## Pixelwise classification of streets in Doha, Qatar
+## From image to pixel-by-pixel classification
 
 ## we start with the "contratcing path"##
 # input
@@ -436,8 +425,6 @@ pretrained_unet <- keras_model(inputs = vgg16_feat_extr$input, outputs = unet_te
 
 ```
 
-
-
 ```{r spectral_augmentation}
 spectral_augmentation <- function(img) {
   img <- tf$image$random_brightness(img, max_delta = 0.3)
@@ -447,7 +434,6 @@ spectral_augmentation <- function(img) {
   img <- tf$clip_by_value(img,0, 1)
 }
 ```
-
 
 ```{r prepare_with_augmentation}
 
@@ -596,7 +582,6 @@ dl_prepare_data <- function(files=NULL, train, predict=FALSE, subsets_path=NULL,
 
 ```
 
-
 ```{r prepare_data_unet}
 #get paths
 files <- data.frame(
@@ -678,11 +663,8 @@ sample <- floor(runif(n = 1,min = 1,max = 4))
 plot(out)
 ```
 
-
-
-Functions for Predictions:
 ```{r rebuild_img}
-
+# Function for Predictions
 rebuild_img <- function(pred_subsets,out_path,target_rst){
   require(raster)
   require(gdalUtils)
@@ -727,26 +709,19 @@ rebuild_img <- function(pred_subsets,out_path,target_rst){
 
 ```
 
-
-
-
-
-
-# Street Prediction for 2019
 ```{r predict 2019}
+# Street Prediction for 2019
 test_dataset <- dl_prepare_data(train = F,predict = T,subsets_path="./data/testarea_unet/2019_subsets/",model_input_shape = c(448,448),batch_size = 5L)
 
 system.time(predictions <- predict(pretrained_unet,test_dataset))
 ```
 
-Let´s check the result on the map. We will again use the method for reassembling the subsets to the final map, which you will see later.
-
 ```{r rebuild img 2019 ,echo=F,warning=F, message=F,results=F}
+# Let´s check the result on the map. We will again use the method for reassembling the subsets to the final map, which you will see later.
 input_img <- stack("data/testarea_unet/doha_2019.tif")
 
 rebuild_img(predictions,out_path = "./data/testarea_unet/2019_",target_rst = raster_cropped)
 ```
-
 
 ```{r categorize probabilities 2019, echo=F,warning=F, message=F,results=F}
 result_map <- raster("./data/testarea_unet/2019_out/mosaic.tif")%>%readAll()
@@ -778,7 +753,6 @@ viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
   mapview(result_map, layer.name="Street Prediction in Doha in 2019", alpha.regions=1,na.alpha=0)
 ```
 
-
 ```{r plot 2019,echo=F,warning=F, message=F,results=T,out.width="100%"}
 viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
   #mapview(result_map,layer.name="street prediction", alpha.regions=0.4,na.alpha=0)
@@ -791,10 +765,8 @@ train_img <- stack("data/Bahrain_2021_3Band/bahrain_2021.tif")
 plotRGB(train_img, main = "Train area", axes = TRUE,r=1,b=3)
 ```
 
-
-## Inspecting your network
 ```{r visualizing_activations 2019}
-
+# Inspecting your network
 plot_layer_activations <- function(img_path, model, activations_layers,channels){
 
 
@@ -836,7 +808,6 @@ plot_layer_activations <- function(img_path, model, activations_layers,channels)
 
 ```
 
-
 ```{r plot single subset 2019}
 par(mfrow=c(1,1))
 plot(read_stars("./data/testarea_unet/2019_subsets/25.jpg"),rgb=c(1,2,3))
@@ -846,9 +817,8 @@ par(mfrow=c(3,4),mar=c(1,1,1,1),cex=0.5)
 plot_layer_activations(img_path = "./data/testarea_unet/2019_subsets/25.jpg", model=pretrained_unet ,activations_layers = c(2,3,5,6,8,9,10,12,13,14), channels = 1:4)
 ```
 
-
-# 2017
 ```{r create testarea subsets 2017}
+# Street Prediction for 2017
 #qatar_testarea = stack("data/2021/files/20170422_062109_1030_3B_Visual_clip.tif")
 qatar_testarea = stack("data/testarea_unet/doha_2017.tif")
 
@@ -856,19 +826,16 @@ qatar_testarea = stack("data/testarea_unet/doha_2017.tif")
 raster_cropped_17 <- dl_subsets(inputrst = qatar_testarea, targetsize = c(448,448), targetdir = "data/testarea_unet/2017_subsets/")
 ```
 
-
 ```{r predict 2017}
 test_dataset_17 <- dl_prepare_data(train = F,predict = T,subsets_path="./data/testarea_unet/2017_subsets/",model_input_shape = c(448,448),batch_size = 5L)
 
 system.time(predictions_17 <- predict(pretrained_unet,test_dataset_17))
 ```
 
-
-## Final prediction result
-
-Let´s check the result on the map. We will again use the method for reassembling the subsets to the final map, which you will see later.
+Final prediction result
 
 ```{r categorize propbablities 2017,echo=F,warning=F, message=F,results=F}
+# Let´s check the result on the map. We will again use the method for reassembling the subsets to the final map, which you will see later.
 input_img <- stack("data/testarea_unet/doha_2017.tif")
 rebuild_img(predictions_17,out_path = "./data/testarea_unet/2017_",target_rst = raster_cropped_17)
 
@@ -880,6 +847,7 @@ result_map_0.3NA[result_map_0.3NA[[1]]<0.3] <- NA
 # histogram
 hist(values(result_map_0.3NA), main = "Classified Street Pixels in 2017")
 ```
+
 ```{r ways to detect differences}
 # cell stats
 cellStats(result_map, "sum")
@@ -910,9 +878,8 @@ plotRGB(train_img, main = "Train area", axes = TRUE,r=1,b=3)
 ```
 
 
-## Inspecting your network
 ```{r visualizing_activations 2017}
-
+# Inspecting your network
 plot_layer_activations <- function(img_path, model, activations_layers,channels){
 
 
@@ -964,9 +931,7 @@ par(mfrow=c(3,4),mar=c(1,1,1,1),cex=0.5)
 plot_layer_activations(img_path = "./data/testarea_unet/2017_subsets/25.jpg", model=pretrained_unet ,activations_layers = c(2,3,5,6,8,9,10,12,13,14), channels = 1:4)
 ```
 
-# 2021
-
-
+## Street Prediction for 2021
 ```{r create testarea subsets 2021}
 #qatar_testarea = stack("data/2021/files/20170422_062109_1030_3B_Visual_clip.tif")
 qatar_testarea = stack("data/testarea_unet/doha_2021.tif")
@@ -974,7 +939,6 @@ qatar_testarea = stack("data/testarea_unet/doha_2021.tif")
 # Crashes the r Session
 raster_cropped_21 <- dl_subsets(inputrst = qatar_testarea, targetsize = c(448,448), targetdir = "data/testarea_unet/2021_subsets/")
 ```
-
 
 ```{r predict 2021}
 test_dataset_21 <- dl_prepare_data(train = F,predict = T,subsets_path="./data/testarea_unet/2021_subsets/",model_input_shape = c(448,448),batch_size = 5L)
@@ -991,11 +955,10 @@ result_map_0.3NA[result_map_0.3NA[[1]]<0.3] <- NA
 hist(values(result_map_0.3NA), main = "Classified Street Pixels in 2019",col="green")
 ```
 
-## Final prediction result
-
-Let´s check the result on the map. We will again use the method for reassembling the subsets to the final map, which you will see later.
-
 ```{r rebuild images 2021,echo=F,warning=F, message=F,results=F}
+# Final prediction result
+# Let´s check the result on the map. We will again use the method for reassembling the subsets to the final map, which you will see later.
+
 input_img <- stack("data/testarea_unet/doha_2021.tif")
 rebuild_img(predictions_21,out_path = "./data/testarea_unet/2021_",target_rst = raster_cropped_21)
 
@@ -1056,10 +1019,8 @@ train_img <- stack("data/Bahrain_2021_3Band/bahrain_2021.tif")
 plotRGB(train_img, main = "Train area", axes = TRUE,r=1,b=3)
 ```
 
-
-## Inspecting your network
 ```{r visualizing_activations}
-
+# Inspecting your network
 plot_layer_activations <- function(img_path, model, activations_layers,channels){
 
 
