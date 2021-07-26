@@ -1,0 +1,1154 @@
+---
+title: "Project report - Deep Learning for the Analysis of Remote Sensing Imagery from Nano Satellites"
+author: "Katharina Hovestadt (440 289), Lia Kirsch, Jannis Fröhlking (439 599)"
+date: "31 7 2021"
+output:
+  html_document:
+    css: style.css
+    number_sections: yes
+---
+
+```{r standardize output, include=FALSE}
+library(knitr)
+opts_chunk$set(message=FALSE, warning=FALSE, echo=FALSE, fig.width = 7, fig.height = 7, fig.align = "center")
+```
+
+```{r env, results=F,warning=F,message=F}
+library(keras)
+library(tensorflow)
+library(tfdatasets)
+library(purrr)
+library(ggplot2)
+library(rsample)
+library(stars)
+library(terra)
+library(raster)
+library(reticulate)
+library(mapview)
+library(dplyr)
+```
+
+# Introduction
+
+# Data
+
+What you need:
+- planet 3 band images of train region (Bahrain)
+- planet 3 band images of study region (Qatar)
+- osm shapefile containing streets of Bahrain @see: [Link to OSM download]
+
+## Train data
+
+### Preprocess satellite images
+```{r function to preprocess satellite tiles}
+setNAs <- function(test_tile){
+  # set zero values to NA
+  test_tile[test_tile[]==0] <- NA
+  # crop to non NA values
+  test_tile = trim(test_tile)
+  # remove fourth band (NIR)
+  test_tile = dropLayer(test_tile,4)
+  return (test_tile)
+  }
+```
+
+```{r merge single raster images}
+# Set path to folder containing Planet satellite images of Bahrain
+if(!file.exists("data/training_unet/bahrain_2021.tif")){
+  setwd("Bahrain_2021_3Band/files")
+  files = list.files(pattern = ".tif$")
+  filesList = as.list(files)
+  stackList = lapply(filesList, stack)
+  stackList = lapply(stackList, setNAs)
+  mosaic_bahrain = mosaic(stackList[[1]],stackList[[2]],stackList[[3]], stackList[[4]], fun = mean)
+  setwd("~/")
+  writeRaster(mosaic_bahrain, "data/training_unet/bahrain_2021.tif")
+}
+
+
+if(!file.exists("data/testarea_unet/doha_2021.tif")){
+  setwd("2021/files")
+  files = list.files(pattern = ".tif$")
+  filesList = as.list(files)
+  stackList = lapply(filesList, stack)
+  stackList = lapply(stackList, setNAs)
+  mosaic_bahrain = mosaic(stackList[[1]],stackList[[2]],fun = mean)
+  setwd("~/")
+  writeRaster(mosaic_bahrain, "data/testarea_unet/doha_2021.tif")
+}
+
+if(!file.exists("data/testarea_unet/doha_2019.tif")){
+  setwd("2019/files")
+  files = list.files(pattern = ".tif$")
+  filesList = as.list(files)
+  stackList = lapply(filesList, stack)
+  stackList = lapply(stackList, setNAs)
+  mosaic_bahrain = mosaic(stackList[[1]],stackList[[2]],fun = mean)
+  setwd("~/")
+  writeRaster(mosaic_bahrain, "data/testarea_unet/doha_2019.tif")
+}
+
+if(!file.exists("data/testarea_unet/doha_2017.tif")){
+  setwd("2017/files")
+  files = list.files(pattern = ".tif$")
+  filesList = as.list(files)
+  stackList = lapply(filesList, stack)
+  stackList = lapply(stackList, setNAs)
+  mosaic_bahrain = mosaic(stackList[[1]],stackList[[2]],fun = mean)
+  setwd("~/")
+  writeRaster(mosaic_bahrain, "data/testarea_unet/doha_2017.tif")
+}
+```
+
+### Preprocess street shapefile
+```{r crop street shapefile to satellite image}
+# load planet image of train area
+st_bahrain = stack("data/training_unet/bahrain_2021.tif")
+# load openstreetmap data of the streegts
+streets_all = read_sf("data/shp/streets_osm.shp")
+# transform osm data to crs of bahrain image
+streets_utm = st_transform(streets_all, crs = crs(st_bahrain))
+streets = st_crop(streets_utm, st_bbox(st_bahrain))
+```
+
+
+#### Rasterize streets shapefile
+```{r rasterization of all roads with same width}
+# creates a SpatVector object
+v_lines = vect(streets)
+# prepare the output raster size
+r = rast(v_lines, ncol = ncol(st_bahrain), nrow = nrow(st_bahrain))
+x <- rasterize(v_lines, r, touches = TRUE, background = 0)
+par(mfrow=c(1,2))
+plot(x, col = c("white","black"), axes = FALSE, legend = FALSE)
+plotRGB(st_bahrain, r = 1, g=2, b=3)
+```
+
+
+Buffer streets to get better rasterization result, because main roads have a higher width
+```{r buffer}
+primaries = streets[streets$fclass == "primary",]
+secondaries = streets[streets$fclass == "secondary",]
+tertiaries = streets[streets$fclass == "tertiary",]
+trunks = streets[streets$fclass == "trunk",]
+
+poly_streets = rbind(primaries,secondaries, tertiaries, trunks)
+
+st_geometry(poly_streets[poly_streets$fclass == "trunk",]) = st_geometry(st_buffer(trunks, dist = 6))
+st_geometry(poly_streets[poly_streets$fclass == "primary",]) = st_geometry(st_buffer(primaries, dist = 5))
+st_geometry(poly_streets[poly_streets$fclass == "secondary",]) = st_geometry(st_buffer(secondaries, dist = 4))
+st_geometry(poly_streets[poly_streets$fclass == "tertiary",]) = st_geometry(st_buffer(tertiaries, dist = 3))
+```
+
+```{r rasterization of all roads with varying width}
+v_poly = vect(poly_streets)
+r_poly = rast(v_poly, ncol = ncol(st_bahrain), nrow = nrow(st_bahrain), extent = ext(x))
+x_poly <- rasterize(v_poly, r_poly, touches = TRUE, background = 0)
+par(mfrow=c(1,2))
+plot(x_poly, col =c("white","black"), axes = FALSE, legend = FALSE)
+plot(x, col =c("white","black"), axes = FALSE, legend = FALSE)
+plotRGB(st_bahrain, r = 1, g=2, b=3)
+```
+
+Combine resulting two raster layers
+```{r combine resulting rasters}
+result = max(x_poly,x)
+writeRaster(result, "data/training_unet/street_mask.tif", overwrite = TRUE)
+```
+
+### Create subsets for the unet training
+```{r, dl_subsets}
+dl_subsets <- function(inputrst, targetsize, targetdir, targetname="", img_info_only = FALSE, is_mask = FALSE){
+  require(jpeg)
+  require(raster)
+
+  #determine next number of quadrats in x and y direction, by simple rounding
+  targetsizeX <- targetsize[1]
+  targetsizeY <- targetsize[2]
+  inputX <- ncol(inputrst)
+  inputY <- nrow(inputrst)
+
+  #determine dimensions of raster so that
+  #it can be split by whole number of subsets (by shrinking it)
+  while(inputX%%targetsizeX!=0){
+    inputX = inputX-1  
+  }
+  while(inputY%%targetsizeY!=0){
+    inputY = inputY-1    
+  }
+
+  #determine difference
+  diffX <- ncol(inputrst)-inputX
+  diffY <- nrow(inputrst)-inputY
+
+  #determine new dimensions of raster and crop,
+  #cutting evenly on all sides if possible
+  newXmin <- floor(diffX/2)
+  newXmax <- ncol(inputrst)-ceiling(diffX/2)-1
+  newYmin <- floor(diffY/2)
+  newYmax <- nrow(inputrst)-ceiling(diffY/2)-1
+  rst_cropped <- suppressMessages(crop(inputrst, extent(inputrst,newYmin,newYmax,newXmin,newXmax)))
+
+    agg <- suppressMessages(aggregate(rst_cropped[[1]],c(targetsizeX,targetsizeY)))
+    agg[]    <- suppressMessages(1:ncell(agg))
+    agg_poly <- suppressMessages(rasterToPolygons(agg))
+    names(agg_poly) <- "polis"
+
+    pb <- txtProgressBar(min = 0, max = ncell(agg), style = 3)
+    for(i in 1:ncell(agg)) {
+
+      # rasterOptions(tmpdir=tmpdir)
+      setTxtProgressBar(pb, i)
+      e1  <- extent(agg_poly[agg_poly$polis==i,])
+
+      subs <- suppressMessages(crop(rst_cropped,e1))
+      #rescale to 0-1, for jpeg export
+      if(is_mask==FALSE){
+
+        subs <- suppressMessages((subs-cellStats(subs,"min"))/(cellStats(subs,"max")-cellStats(subs,"min")))
+      }
+      #write jpg
+
+
+      writeJPEG(as.array(subs),target = paste0(targetdir,targetname,i,".jpg"),quality = 1)
+
+
+    }
+    close(pb)
+    rm(subs,agg,agg_poly)
+    gc()
+    return(rst_cropped)
+
+}
+```
+
+```{r create training subsets}
+inputrst = stack("data/training_unet/bahrain_2021.tif")
+inputrst_mask = raster("data/training_unet/street_mask.tif")
+plotRGB(inputrst, r = 1, g=2, b=3)
+plot(inputrst_mask, col=c("white","black"))
+# Create subsets of Bahrain and Street mask
+#dl_subsets(inputrst = inputrst, targetsize = c(448,448), targetdir = "data/training_unet/imgs/")
+#dl_subsets(inputrst = inputrst_mask, targetsize = c(448,448), targetdir = "data/training_unet/masks/")
+```
+
+## Test area
+```{r mosaic testarea}
+if(file.exists("data/testarea_unet/doha_2021.tif")){
+  plotRGB(stack("data/testarea_unet/doha_2021.tif"),r=1,b=3)
+}else{
+  test_files = list.files("2021/files", pattern = ".tif$")
+  # put tiles into a list of raster stacks
+  setwd("2021/files")
+  stackList_test = lapply(test_files, stack)
+
+  # test one image
+  # testImage = stackList_test[[1]]
+  # testImage = crop(testImage, e)
+
+  stackList_test = lapply(stackList_test, setNAs)
+  mosaic_doha = mosaic(stackList_test[[1]],
+                       stackList_test[[2]],
+                       stackList_test[[3]],
+                       fun = mean)
+  # r = stackList_test[[1]]
+  # r = crop(r, extent(532500,540000,2783000, 2784000)) # currently used for testing
+  setwd("~/")
+  writeRaster(mosaic_doha, "data/testarea_unet/doha_2021.tif",overwrite = TRUE)
+}
+```
+
+
+```{r create testarea subsets}
+qatar_testarea = stack("data/testarea_unet/doha_2019.tif")
+
+# Crashes the r Session
+raster_cropped <- dl_subsets(inputrst = qatar_testarea, targetsize = c(448,448), targetdir = "data/testarea_unet/2019_subsets/")
+
+print("Testarea subset creation done!")
+```
+
+
+# Pixelwise classification of streets in Doha, Qatar
+
+## From image to pixel-by-pixel classification
+```{r simple_Unet}
+
+## we start with the "contratcing path"##
+# input
+input_tensor <- layer_input(shape = c(448,448,3))
+
+#conv block 1
+unet_tensor <- layer_conv_2d(input_tensor,filters = 64,kernel_size = c(3,3), padding = "same",activation = "relu")
+conc_tensor2 <- layer_conv_2d(unet_tensor,filters = 64,kernel_size = c(3,3), padding = "same",activation = "relu")
+unet_tensor <- layer_max_pooling_2d(conc_tensor2)
+
+#conv block 2
+unet_tensor <- layer_conv_2d(unet_tensor,filters = 128,kernel_size = c(3,3), padding = "same",activation = "relu")
+conc_tensor1 <- layer_conv_2d(unet_tensor,filters = 128,kernel_size = c(3,3), padding = "same",activation = "relu")
+unet_tensor <- layer_max_pooling_2d(conc_tensor1)
+
+#"bottom curve" of unet
+unet_tensor <- layer_conv_2d(unet_tensor,filters = 256,kernel_size = c(3,3), padding = "same",activation = "relu")
+unet_tensor <- layer_conv_2d(unet_tensor,filters = 256,kernel_size = c(3,3), padding = "same",activation = "relu")
+
+##  this is where the expanding path begins ##
+
+# upsampling block 1
+unet_tensor <- layer_conv_2d_transpose(unet_tensor,filters = 128,kernel_size = c(2,2),strides = 2,padding = "same")
+unet_tensor <- layer_concatenate(list(conc_tensor1,unet_tensor))
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 128, kernel_size = c(3,3),padding = "same", activation = "relu")
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 128, kernel_size = c(3,3),padding = "same", activation = "relu")
+
+# upsampling block 2
+unet_tensor <- layer_conv_2d_transpose(unet_tensor,filters = 64,kernel_size = c(2,2),strides = 2,padding = "same")
+unet_tensor <- layer_concatenate(list(conc_tensor2,unet_tensor))
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 64, kernel_size = c(3,3),padding = "same", activation = "relu")
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 64, kernel_size = c(3,3),padding = "same", activation = "relu")
+
+# output
+unet_tensor <- layer_conv_2d(unet_tensor,filters = 1,kernel_size = 1, activation = "sigmoid")
+
+# combine final unet_tensor (carrying all the transformations applied through the layers)
+# with input_tensor to create model
+
+unet_model <- keras_model(inputs = input_tensor, outputs = unet_tensor)
+
+```
+
+```{r pretrained_unet}
+
+## load pretrained vgg16 and use part of it as contracting path (feature extraction) ##
+vgg16_feat_extr <- application_vgg16(weights = "imagenet", include_top = FALSE, input_shape = c (448,448,3))
+
+# optionally freeze first layers to prevent changing of their weights, either whole convbase or only certain layers
+# freeze_weights(vgg16_feat_extr) #or:
+# freeze_weights(vgg16_feat_extr, to = "block1_pool")
+
+# we'll not use the whole model but only up to layer 15
+unet_tensor <- vgg16_feat_extr$layers[[15]]$output
+
+
+## add the second part of 'U' for segemntation ##
+
+# "bottom curve" of U-net
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 1024, kernel_size = 3, padding = "same", activation = "relu")
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 1024, kernel_size = 3, padding = "same", activation = "relu")
+
+# upsampling block 1
+unet_tensor <- layer_conv_2d_transpose(unet_tensor, filters = 512, kernel_size = 2, strides = 2, padding = "same")
+unet_tensor <- layer_concatenate(list(vgg16_feat_extr$layers[[14]]$output, unet_tensor))
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 512, kernel_size = 3, padding = "same", activation = "relu")
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 512, kernel_size = 3, padding = "same", activation = "relu")
+
+# upsampling block 2
+unet_tensor <- layer_conv_2d_transpose(unet_tensor, filters = 256, kernel_size = 2, strides = 2, padding = "same")
+unet_tensor <- layer_concatenate(list(vgg16_feat_extr$layers[[10]]$output, unet_tensor))
+unet_tensor <- layer_conv_2d(unet_tensor,filters = 256, kernel_size = 3, padding = "same", activation = "relu")
+unet_tensor <- layer_conv_2d(unet_tensor,filters = 256, kernel_size = 3, padding = "same", activation = "relu")
+
+# upsampling block 3
+unet_tensor <- layer_conv_2d_transpose(unet_tensor, filters = 128, kernel_size = 2, strides = 2, padding = "same")
+unet_tensor <- layer_concatenate(list(vgg16_feat_extr$layers[[6]]$output, unet_tensor))
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 128, kernel_size = 3, padding = "same", activation = "relu")
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 128, kernel_size = 3, padding = "same", activation = "relu")
+
+# upsampling block 4
+unet_tensor <- layer_conv_2d_transpose(unet_tensor, filters = 64, kernel_size = 2, strides = 2, padding = "same")
+unet_tensor <- layer_concatenate(list(vgg16_feat_extr$layers[[3]]$output, unet_tensor))
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 64, kernel_size = 3, padding = "same", activation = "relu")
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 64, kernel_size = 3, padding = "same", activation = "relu")
+
+# final output
+unet_tensor <- layer_conv_2d(unet_tensor, filters = 1, kernel_size = 1, activation = "sigmoid")
+
+# create model from tensors
+pretrained_unet <- keras_model(inputs = vgg16_feat_extr$input, outputs = unet_tensor)
+
+```
+
+
+
+```{r spectral_augmentation}
+spectral_augmentation <- function(img) {
+  img <- tf$image$random_brightness(img, max_delta = 0.3)
+  img <- tf$image$random_contrast(img, lower = 0.8, upper = 1.2)
+  img <- tf$image$random_saturation(img, lower = 0.8, upper = 1.2)
+    # make sure we still are between 0 and 1
+  img <- tf$clip_by_value(img,0, 1)
+}
+```
+
+
+```{r prepare_with_augmentation}
+
+#adapted from: https://blogs.rstudio.com/ai/posts/2019-08-23-unet/ (accessed 2020-08-12)
+
+dl_prepare_data <- function(files=NULL, train, predict=FALSE, subsets_path=NULL, model_input_shape = c(448,448), batch_size = 10L) {
+
+  if (!predict){
+
+    #function for random change of saturation,brightness and hue,
+    #will be used as part of the augmentation
+    spectral_augmentation <- function(img) {
+      img <- tf$image$random_brightness(img, max_delta = 0.3)
+      img <- tf$image$random_contrast(img, lower = 0.8, upper = 1.1)
+      img <- tf$image$random_saturation(img, lower = 0.8, upper = 1.1)
+      # make sure we still are between 0 and 1
+      img <- tf$clip_by_value(img, 0, 1)
+    }
+
+
+    #create a tf_dataset from the input data.frame
+    #right now still containing only paths to images
+    dataset <- tensor_slices_dataset(files)
+
+    #use dataset_map to apply function on each record of the dataset
+    #(each record being a list with two items: img and mask), the
+    #function is list_modify, which modifies the list items
+    #'img' and 'mask' by using the results of applying decode_jpg on the img and the mask   
+    #-> i.e. jpgs are loaded and placed where the paths to the files were (for each record in dataset)
+    dataset <-
+      dataset_map(dataset, function(.x)
+        list_modify(.x,img = tf$image$decode_jpeg(tf$io$read_file(.x$img)),
+                       mask = tf$image$decode_jpeg(tf$io$read_file(.x$mask))))
+
+    #convert to float32:
+    #for each record in dataset, both its list items are modyfied
+    #by the result of applying convert_image_dtype to them
+    dataset <-
+      dataset_map(dataset, function(.x)
+        list_modify(.x, img = tf$image$convert_image_dtype(.x$img, dtype = tf$float32),
+                        mask = tf$image$convert_image_dtype(.x$mask, dtype = tf$float32)))
+
+    #resize:
+    #for each record in dataset, both its list items are modified
+    #by the results of applying resize to them
+    dataset <-
+      dataset_map(dataset, function(.x)
+        list_modify(.x, img = tf$image$resize(.x$img, size = shape(model_input_shape[1], model_input_shape[2])),
+                        mask = tf$image$resize(.x$mask, size = shape(model_input_shape[1], model_input_shape[2]))))
+
+
+    # data augmentation performed on training set only
+    if (train) {
+
+      #augmentation 1: flip left right, including random change of
+      #saturation, brightness and contrast
+
+      #for each record in dataset, only the img item is modified by the result
+      #of applying spectral_augmentation to it
+      augmentation <-
+        dataset_map(dataset, function(.x)
+          list_modify(.x, img = spectral_augmentation(.x$img)))
+
+      #...as opposed to this, flipping is applied to img and mask of each record
+      augmentation <-
+        dataset_map(augmentation, function(.x)
+          list_modify(.x, img = tf$image$flip_left_right(.x$img),
+                          mask = tf$image$flip_left_right(.x$mask)))
+
+      dataset_augmented <- dataset_concatenate(dataset,augmentation)
+
+      #augmentation 2: flip up down,
+      #including random change of saturation, brightness and contrast
+      augmentation <-
+        dataset_map(dataset, function(.x)
+          list_modify(.x, img = spectral_augmentation(.x$img)))
+
+      augmentation <-
+        dataset_map(augmentation, function(.x)
+          list_modify(.x, img = tf$image$flip_up_down(.x$img),
+                          mask = tf$image$flip_up_down(.x$mask)))
+
+      dataset_augmented <- dataset_concatenate(dataset_augmented,augmentation)
+
+      #augmentation 3: flip left right AND up down,
+      #including random change of saturation, brightness and contrast
+
+      augmentation <-
+        dataset_map(dataset, function(.x)
+          list_modify(.x, img = spectral_augmentation(.x$img)))
+
+      augmentation <-
+        dataset_map(augmentation, function(.x)
+          list_modify(.x, img = tf$image$flip_left_right(.x$img),
+                          mask = tf$image$flip_left_right(.x$mask)))
+
+      augmentation <-
+        dataset_map(augmentation, function(.x)
+          list_modify(.x, img = tf$image$flip_up_down(.x$img),
+                          mask = tf$image$flip_up_down(.x$mask)))
+
+      dataset_augmented <- dataset_concatenate(dataset_augmented,augmentation)
+
+    }
+
+    # shuffling on training set only
+    if (train) {
+      dataset <- dataset_shuffle(dataset_augmented, buffer_size = batch_size*128)
+    }
+
+    # train in batches; batch size might need to be adapted depending on
+    # available memory
+    dataset <- dataset_batch(dataset, batch_size)
+
+    # output needs to be unnamed
+    dataset <-  dataset_map(dataset, unname)
+
+  }else{
+    #make sure subsets are read in in correct order
+    #so that they can later be reassembled correctly
+    #needs files to be named accordingly (only number)
+    o <- order(as.numeric(tools::file_path_sans_ext(basename(list.files(subsets_path)))))
+    subset_list <- list.files(subsets_path, full.names = T)[o]
+
+    dataset <- tensor_slices_dataset(subset_list)
+
+    dataset <-
+      dataset_map(dataset, function(.x)
+        tf$image$decode_jpeg(tf$io$read_file(.x)))
+
+    dataset <-
+      dataset_map(dataset, function(.x)
+        tf$image$convert_image_dtype(.x, dtype = tf$float32))
+
+    dataset <-
+      dataset_map(dataset, function(.x)
+        tf$image$resize(.x, size = shape(model_input_shape[1], model_input_shape[2])))
+
+    dataset <- dataset_batch(dataset, batch_size)
+    dataset <-  dataset_map(dataset, unname)
+
+  }
+
+}
+
+
+```
+
+
+```{r prepare_data_unet}
+#get paths
+files <- data.frame(
+  img = list.files("data/training_unet/imgs/", full.names = TRUE, pattern = "*.jpg"),
+  mask = list.files("data/training_unet/masks/", full.names = TRUE, pattern = "*.jpg")
+)
+
+# split the data into training and validation datasets.
+
+files <- initial_split(files, prop = 0.7)
+
+# prepare data for training
+training_dataset <- dl_prepare_data(training(files),train = TRUE,model_input_shape = c(448,448),batch_size = 10L)
+validation_dataset <- dl_prepare_data(testing(files),train = FALSE,model_input_shape = c(448,448),batch_size = 10L)
+```
+
+```{r inspect_augmented_data}
+# get all tensors through the python iterator
+training_tensors <- training_dataset%>%as_iterator()%>%iterate()
+
+#how many tensors?
+length(training_tensors)
+```
+
+
+```{r, echo=F}
+#now what´s the shape of one tensor, here the image tensor (list item 1) of the first batch?
+training_tensors[[1]][[1]]$shape
+# and the mask
+training_tensors[[1]][[2]]$shape
+
+#how about the last batch?
+training_tensors[[8]][[1]]$shape
+training_tensors[[8]][[2]]$shape
+```
+
+```{r train_unet}
+compile(
+  pretrained_unet,
+  optimizer = optimizer_rmsprop(lr = 1e-5),
+  loss = "binary_crossentropy",
+  metrics = c(metric_binary_accuracy)
+  )
+
+
+diagnostics <- fit(pretrained_unet,
+               training_dataset,
+               epochs = 15,
+               validation_data = validation_dataset)
+
+plot(diagnostics)
+
+```
+
+```{r save model}
+save_model_hdf5(pretrained_unet,filepath = "./pretrained_unet.h5")
+```
+
+```{r load model}
+pretrained_unet <- load_model_hdf5("./pretrained_unet.h5")
+```
+
+
+```{r}
+sample <- floor(runif(n = 1,min = 1,max = 4))
+  img_path <- as.character(testing(files)[[sample,1]])
+  mask_path <- as.character(testing(files)[[sample,2]])
+  img <- magick::image_read(img_path)
+  mask <- magick::image_read(mask_path)
+  pred <- magick::image_read(as.raster(predict(object = pretrained_unet,validation_dataset)[sample,,,]))
+
+  out <- magick::image_append(c(
+  magick::image_append(mask, stack = TRUE),
+  magick::image_append(img, stack = TRUE),
+  magick::image_append(pred, stack = TRUE)
+)
+)
+
+plot(out)
+```
+
+
+#2019
+```{r}
+test_dataset <- dl_prepare_data(train = F,predict = T,subsets_path="./data/testarea_unet/2019_subsets/",model_input_shape = c(448,448),batch_size = 5L)
+
+system.time(predictions <- predict(pretrained_unet,test_dataset))
+```
+
+```{r}
+test_dataset <- dl_prepare_data(train = F,predict = T,subsets_path="./data/testarea_unet/2019_subsets/",model_input_shape = c(448,448),batch_size = 5L)
+#predictions_big <- predict(pretrained_unet, stack("data/testarea_unet/doha_2021_test.tif"))
+```
+
+
+```{r rebuild_img}
+
+rebuild_img <- function(pred_subsets,out_path,target_rst){
+  require(raster)
+  require(gdalUtils)
+  require(stars)
+
+
+  subset_pixels_x <- ncol(pred_subsets[1,,,])
+  subset_pixels_y <- nrow(pred_subsets[1,,,])
+  tiles_rows <- nrow(target_rst)/subset_pixels_y
+  tiles_cols <- ncol(target_rst)/subset_pixels_x
+
+  # load target image to determine dimensions
+   target_stars <- st_as_stars(target_rst,proxy=F)
+   #prepare subfolder for output
+   result_folder <- paste0(out_path,"out")
+   if(dir.exists(result_folder)){
+     unlink(result_folder,recursive = T)
+   }
+   dir.create(path = result_folder)
+
+  #for each tile, create a stars from corresponding predictions,
+  #assign dimensions using original/target image, and save as tif:
+  for (crow in 1:tiles_rows){
+    for (ccol in 1:tiles_cols){
+      i <- (crow-1)*floor(tiles_cols) + (ccol-1) +1
+
+      dimx <- c(((ccol-1)*subset_pixels_x+1),(ccol*subset_pixels_x))
+      dimy <- c(((crow-1)*subset_pixels_y+1),(crow*subset_pixels_y))
+      cstars <- st_as_stars(t(pred_subsets[i,,,1]))
+      attr(cstars,"dimensions")[[2]]$delta=-1
+      #set dimensions using original raster
+      st_dimensions(cstars) <- st_dimensions(target_stars[,dimx[1]:dimx[2],dimy[1]:dimy[2]])[1:2]
+
+      write_stars(cstars,dsn = paste0(result_folder,"/_out_",i,".tif"))
+    }
+  }
+
+  starstiles <- as.vector(list.files(result_folder,full.names = T),mode = "character")
+  gdalbuildvrt(starstiles,paste0(result_folder,"/mosaic.vrt"))
+  gdalwarp(paste0(result_folder,"/mosaic.vrt"), paste0(result_folder,"/mosaic.tif"))
+}
+
+```
+
+## Final prediction result
+
+Let´s check the result on the map. We will again use the method for reassembling the subsets to the final map, which you will see later.
+
+```{r,echo=F,warning=F, message=F,results=F}
+input_img <- stack("data/testarea_unet/doha_2019.tif")
+
+rebuild_img(predictions,out_path = "./data/testarea_unet/2019_",target_rst = raster_cropped)
+```
+
+
+```{r, echo=F,warning=F, message=F,results=F}
+result_map <- raster("./data/testarea_unet/2019_out/mosaic.tif")%>%readAll()
+hist(result_map, main='Street Preditiction Values in 2019')
+
+result_map_0.3NA = result_map
+result_map_0.3NA[result_map_0.3NA[[1]]<0.3] <- NA
+```
+
+```{r ways to detect differences}
+# histogram
+hist(values(result_map_0.3NA), main = "Classified Street Pixels in 2019")
+# cell stats
+cellStats(result_map, "sum")
+cellStats(result_map, stat='mean', na.rm=TRUE, asSample=TRUE)
+
+#standard deviation
+
+# values > 0.3 -> 1, values <0.3 -> 0
+# count numbers
+result_map_0.3 =  result_map
+result_map_0.3[result_map_0.3[[1]]<0.3] <- 0
+result_map_0.3[result_map_0.3[[1]]>0.3] <- 1
+cellStats(result_map_0.3, "sum")
+```
+```{r,echo=F,warning=F, message=F,results=T,out.width="100%"}
+viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
+  #mapview(result_map,layer.name="street prediction", alpha.regions=0.4,na.alpha=0)
+  mapview(result_map, layer.name="Street Prediction in Doha in 2019", alpha.regions=1,na.alpha=0)
+```
+
+
+```{r,echo=F,warning=F, message=F,results=T,out.width="100%"}
+viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
+  #mapview(result_map,layer.name="street prediction", alpha.regions=0.4,na.alpha=0)
+  mapview(result_map_0.3NA,layer.name="Street Prediction in Doha in 2019", alpha.regions=1,na.alpha=0)
+```
+
+```{r compare train and test image}
+plotRGB(input_img, main = "Test area", axes = TRUE,r=1,b=3)
+train_img <- stack("Bahrain_2021_3Band/bahrain_2021.tif")
+plotRGB(train_img, main = "Train area", axes = TRUE,r=1,b=3)
+```
+
+
+## Inspecting your network
+```{r visualizing_activations}
+
+plot_layer_activations <- function(img_path, model, activations_layers,channels){
+
+
+  model_input_size <- c(model$input_shape[[2]], model$input_shape[[3]])
+
+  #preprocess image for the model
+  img <- image_load(img_path, target_size =  model_input_size) %>%
+    image_to_array() %>%
+    array_reshape(dim = c(1, model_input_size[1], model_input_size[2], 3)) %>%
+    imagenet_preprocess_input()
+
+  layer_outputs <- lapply(model$layers[activations_layers], function(layer) layer$output)
+  activation_model <- keras_model(inputs = model$input, outputs = layer_outputs)
+  activations <- predict(activation_model,img)
+  if(!is.list(activations)){
+    activations <- list(activations)
+  }
+
+  #function for plotting one channel of a layer, adopted from: Chollet (2018): "Deep learning with R"
+  plot_channel <- function(channel,layer_name,channel_name) {
+    rotate <- function(x) t(apply(x, 2, rev))
+    image(rotate(channel), axes = FALSE, asp = 1,
+          col = terrain.colors(12),main=paste("layer:",layer_name,"channel:",channel_name))
+  }
+
+  for (i in 1:length(activations)) {
+    layer_activation <- activations[[i]]
+    layer_name <- model$layers[[activations_layers[i]]]$name
+    n_features <- dim(layer_activation)[[4]]
+    for (c in channels){
+
+      channel_image <- layer_activation[1,,,c]
+      plot_channel(channel_image,layer_name,c)
+
+    }
+  }
+
+}
+
+```
+
+
+```{r}
+par(mfrow=c(1,1))
+plot(read_stars("./data/testarea_unet/2019_subsets/25.jpg"),rgb=c(1,2,3))
+
+#visualize layers 3 and 10, channels 1 to 20
+par(mfrow=c(3,4),mar=c(1,1,1,1),cex=0.5)
+plot_layer_activations(img_path = "./data/testarea_unet/2019_subsets/25.jpg", model=pretrained_unet ,activations_layers = c(2,3,5,6,8,9,10,12,13,14), channels = 1:4)
+```
+
+
+# 2017
+```{r create testarea subsets}
+#qatar_testarea = stack("2021/files/20170422_062109_1030_3B_Visual_clip.tif")
+qatar_testarea = stack("data/testarea_unet/doha_2017.tif")
+
+# Crashes the r Session
+raster_cropped_17 <- dl_subsets(inputrst = qatar_testarea, targetsize = c(448,448), targetdir = "data/testarea_unet/2017_subsets/")
+```
+
+
+```{r}
+test_dataset_17 <- dl_prepare_data(train = F,predict = T,subsets_path="./data/testarea_unet/2017_subsets/",model_input_shape = c(448,448),batch_size = 5L)
+
+system.time(predictions_17 <- predict(pretrained_unet,test_dataset_17))
+```
+
+
+```{r rebuild_img}
+
+rebuild_img <- function(pred_subsets,out_path,target_rst){
+  require(raster)
+  require(gdalUtils)
+  require(stars)
+
+
+  subset_pixels_x <- ncol(pred_subsets[1,,,])
+  subset_pixels_y <- nrow(pred_subsets[1,,,])
+  tiles_rows <- nrow(target_rst)/subset_pixels_y
+  tiles_cols <- ncol(target_rst)/subset_pixels_x
+
+  # load target image to determine dimensions
+   target_stars <- st_as_stars(target_rst,proxy=F)
+   #prepare subfolder for output
+   result_folder <- paste0(out_path,"out")
+   if(dir.exists(result_folder)){
+     unlink(result_folder,recursive = T)
+   }
+   dir.create(path = result_folder)
+
+  #for each tile, create a stars from corresponding predictions,
+  #assign dimensions using original/target image, and save as tif:
+  for (crow in 1:tiles_rows){
+    for (ccol in 1:tiles_cols){
+      i <- (crow-1)*floor(tiles_cols) + (ccol-1) +1
+
+      dimx <- c(((ccol-1)*subset_pixels_x+1),(ccol*subset_pixels_x))
+      dimy <- c(((crow-1)*subset_pixels_y+1),(crow*subset_pixels_y))
+      cstars <- st_as_stars(t(pred_subsets[i,,,1]))
+      attr(cstars,"dimensions")[[2]]$delta=-1
+      #set dimensions using original raster
+      st_dimensions(cstars) <- st_dimensions(target_stars[,dimx[1]:dimx[2],dimy[1]:dimy[2]])[1:2]
+
+      write_stars(cstars,dsn = paste0(result_folder,"/_out_",i,".tif"))
+    }
+  }
+
+  starstiles <- as.vector(list.files(result_folder,full.names = T),mode = "character")
+  gdalbuildvrt(starstiles,paste0(result_folder,"/mosaic.vrt"))
+  gdalwarp(paste0(result_folder,"/mosaic.vrt"), paste0(result_folder,"/mosaic.tif"))
+}
+
+```
+
+## Final prediction result
+
+Let´s check the result on the map. We will again use the method for reassembling the subsets to the final map, which you will see later.
+
+```{r,echo=F,warning=F, message=F,results=F}
+input_img <- stack("data/testarea_unet/doha_2017.tif")
+rebuild_img(predictions_17,out_path = "./data/testarea_unet/2017_",target_rst = raster_cropped_17)
+
+result_map <- raster("./data/testarea_unet/2017_out/mosaic.tif")%>%readAll()
+hist(values(result_map), main='Street Preditiction Values in 2017')
+result_map_0.3NA = result_map
+result_map_0.3NA[result_map_0.3NA[[1]]<0.3] <- NA
+
+# histogram
+hist(values(result_map_0.3NA), main = "Classified Street Pixels in 2017")
+```
+```{r ways to detect differences}
+# cell stats
+cellStats(result_map, "sum")
+cellStats(result_map, stat='mean', na.rm=TRUE, asSample=TRUE)
+
+#standard deviation
+
+# values > 0.3 -> 1, values <0.3 -> 0
+# count numbers
+result_map_0.3 =  result_map
+result_map_0.3[result_map_0.3[[1]]<0.3] <- 0
+result_map_0.3[result_map_0.3[[1]]>0.3] <- 1
+cellStats(result_map_0.3, "sum")
+```
+
+
+
+```{r,echo=F,warning=F, message=F,results=T,out.width="100%"}
+viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
+  #mapview(result_map,layer.name="street prediction", alpha.regions=0.4,na.alpha=0)
+  mapview(result_map,layer.name="street prediction in Doha in 2017", alpha.regions=1,na.alpha=0)
+```
+
+```{r compare train and test image}
+plotRGB(input_img, main = "Test area", axes = TRUE,r=1,b=3)
+train_img <- stack("Bahrain_2021_3Band/bahrain_2021.tif")
+plotRGB(train_img, main = "Train area", axes = TRUE,r=1,b=3)
+```
+
+
+## Inspecting your network
+```{r visualizing_activations}
+
+plot_layer_activations <- function(img_path, model, activations_layers,channels){
+
+
+  model_input_size <- c(model$input_shape[[2]], model$input_shape[[3]])
+
+  #preprocess image for the model
+  img <- image_load(img_path, target_size =  model_input_size) %>%
+    image_to_array() %>%
+    array_reshape(dim = c(1, model_input_size[1], model_input_size[2], 3)) %>%
+    imagenet_preprocess_input()
+
+  layer_outputs <- lapply(model$layers[activations_layers], function(layer) layer$output)
+  activation_model <- keras_model(inputs = model$input, outputs = layer_outputs)
+  activations <- predict(activation_model,img)
+  if(!is.list(activations)){
+    activations <- list(activations)
+  }
+
+  #function for plotting one channel of a layer, adopted from: Chollet (2018): "Deep learning with R"
+  plot_channel <- function(channel,layer_name,channel_name) {
+    rotate <- function(x) t(apply(x, 2, rev))
+    image(rotate(channel), axes = FALSE, asp = 1,
+          col = terrain.colors(12),main=paste("layer:",layer_name,"channel:",channel_name))
+  }
+
+  for (i in 1:length(activations)) {
+    layer_activation <- activations[[i]]
+    layer_name <- model$layers[[activations_layers[i]]]$name
+    n_features <- dim(layer_activation)[[4]]
+    for (c in channels){
+
+      channel_image <- layer_activation[1,,,c]
+      plot_channel(channel_image,layer_name,c)
+
+    }
+  }
+
+}
+
+```
+
+
+```{r}
+par(mfrow=c(1,1))
+plot(read_stars("./data/testarea_unet/2017_subsets/25.jpg"),rgb=c(1,2,3))
+
+#visualize layers 3 and 10, channels 1 to 20
+par(mfrow=c(3,4),mar=c(1,1,1,1),cex=0.5)
+plot_layer_activations(img_path = "./data/testarea_unet/2017_subsets/25.jpg", model=pretrained_unet ,activations_layers = c(2,3,5,6,8,9,10,12,13,14), channels = 1:4)
+```
+
+# 2021
+
+
+```{r create testarea subsets}
+#qatar_testarea = stack("2021/files/20170422_062109_1030_3B_Visual_clip.tif")
+qatar_testarea = stack("data/testarea_unet/doha_2021.tif")
+
+# Crashes the r Session
+raster_cropped_21 <- dl_subsets(inputrst = qatar_testarea, targetsize = c(448,448), targetdir = "data/testarea_unet/2021_subsets/")
+```
+
+
+```{r}
+test_dataset_21 <- dl_prepare_data(train = F,predict = T,subsets_path="./data/testarea_unet/2021_subsets/",model_input_shape = c(448,448),batch_size = 5L)
+
+system.time(predictions_21 <- predict(pretrained_unet,test_dataset_21))
+```
+
+```{r, echo=F,warning=F, message=F,results=F}
+result_map <- raster("./data/testarea_unet/2019_out/mosaic.tif")%>%readAll()
+hist(result_map, main='Street Preditiction Values in 2019')
+
+result_map_0.3NA = result_map
+result_map_0.3NA[result_map_0.3NA[[1]]<0.3] <- NA
+hist(values(result_map_0.3NA), main = "Classified Street Pixels in 2019",col="green")
+```
+
+## Final prediction result
+
+Let´s check the result on the map. We will again use the method for reassembling the subsets to the final map, which you will see later.
+
+```{r,echo=F,warning=F, message=F,results=F}
+input_img <- stack("data/testarea_unet/doha_2021.tif")
+rebuild_img(predictions_21,out_path = "./data/testarea_unet/2021_",target_rst = raster_cropped_21)
+
+result_map <- raster("./data/testarea_unet/2021_out/mosaic.tif")%>%readAll()
+hist(values(result_map), main='Street Preditiction Values in 2021')
+result_map_0.3NA = result_map
+result_map_0.3NA[result_map_0.3NA[[1]]<0.3] <- NA
+hist(values(result_map_0.3NA), main = "Classified Street Pixels in 2021")
+```
+```{r ways to detect differences}
+# histogram
+#hist(values(result_map_0.3NA))
+# cell stats
+cellStats(result_map, "sum")
+cellStats(result_map, stat='mean', na.rm=TRUE, asSample=TRUE)
+
+#standard deviation
+
+# values > 0.3 -> 1, values <0.3 -> 0
+# count numbers
+result_map_0.3 =  result_map[result_map[[1]]<0.3] <- 0
+result_map_0.3 = result_map_0.3[result_map_0.3[[1]]>0.3] <- 1
+#cellStats(result_map_0.3, "sum")
+```
+
+```{r compare histograms}
+result_map_21 <- raster("./data/testarea_unet/2021_out/mosaic.tif")%>%readAll()
+result_map_21_0.3NA = result_map_21
+result_map_21_0.3NA[result_map_21_0.3NA[[1]]<0.3] <- NA
+hist(values(result_map_21_0.3NA), main = "Classified Street Pixels comparison",col = rgb(0, 1, 0, 0.5),xlab="street probability")
+
+result_map_17 <- raster("./data/testarea_unet/2017_out/mosaic.tif")%>%readAll()
+result_map_17_0.3NA = result_map_17
+result_map_17_0.3NA[result_map_17_0.3NA[[1]]<0.3] <- NA
+hist(values(result_map_17_0.3NA),col = rgb(0, 0, 1, 0.5), add = TRUE)
+
+result_map_19 <- raster("./data/testarea_unet/2019_out/mosaic.tif")%>%readAll()
+result_map_19_0.3NA = result_map_19
+result_map_19_0.3NA[result_map_19_0.3NA[[1]]<0.3] <- NA
+hist(values(result_map_19_0.3NA),col = rgb(1, 0, 0, 0.5), add = TRUE)
+
+legend("topright", inset=.02, title="Year",
+   c("2017","2019","2021"), fill=c(rgb(0, 0, 1, 0.5),rgb(1, 0, 0, 0.5),rgb(0, 1, 0, 0.5)), horiz=TRUE, cex=0.8)
+```
+
+
+```{r,echo=F,warning=F, message=F,results=T,out.width="100%"}
+viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
+  #mapview(result_map,layer.name="street prediction", alpha.regions=0.4,na.alpha=0)
+  mapview(result_map,layer.name="street prediction in Doha 2021", alpha.regions=1,na.alpha=0)
+```
+
+```{r compare train and test image}
+plotRGB(input_img, main = "Test area", axes = TRUE,r=1,b=3)
+train_img <- stack("Bahrain_2021_3Band/bahrain_2021.tif")
+plotRGB(train_img, main = "Train area", axes = TRUE,r=1,b=3)
+```
+
+
+## Inspecting your network
+```{r visualizing_activations}
+
+plot_layer_activations <- function(img_path, model, activations_layers,channels){
+
+
+  model_input_size <- c(model$input_shape[[2]], model$input_shape[[3]])
+
+  #preprocess image for the model
+  img <- image_load(img_path, target_size =  model_input_size) %>%
+    image_to_array() %>%
+    array_reshape(dim = c(1, model_input_size[1], model_input_size[2], 3)) %>%
+    imagenet_preprocess_input()
+
+  layer_outputs <- lapply(model$layers[activations_layers], function(layer) layer$output)
+  activation_model <- keras_model(inputs = model$input, outputs = layer_outputs)
+  activations <- predict(activation_model,img)
+  if(!is.list(activations)){
+    activations <- list(activations)
+  }
+
+  #function for plotting one channel of a layer, adopted from: Chollet (2018): "Deep learning with R"
+  plot_channel <- function(channel,layer_name,channel_name) {
+    rotate <- function(x) t(apply(x, 2, rev))
+    image(rotate(channel), axes = FALSE, asp = 1,
+          col = terrain.colors(12),main=paste("layer:",layer_name,"channel:",channel_name))
+  }
+
+  for (i in 1:length(activations)) {
+    layer_activation <- activations[[i]]
+    layer_name <- model$layers[[activations_layers[i]]]$name
+    n_features <- dim(layer_activation)[[4]]
+    for (c in channels){
+
+      channel_image <- layer_activation[1,,,c]
+      plot_channel(channel_image,layer_name,c)
+
+    }
+  }
+
+}
+
+```
+
+
+```{r}
+par(mfrow=c(1,1))
+plot(read_stars("./data/testarea_unet/2021_subsets/25.jpg"),rgb=c(1,2,3))
+
+#visualize layers 3 and 10, channels 1 to 20
+par(mfrow=c(3,4),mar=c(1,1,1,1),cex=0.5)
+plot_layer_activations(img_path = "./data/testarea_unet/2021_subsets/25.jpg", model=pretrained_unet ,activations_layers = c(2,3,5,6,8,9,10,12,13,14), channels = 1:4)
+```
+
+
+```{r,echo=F,warning=F, message=F,results=T,out.width="100%"}
+result_map2017 <- raster("./data/testarea_unet/2017_out/mosaic.tif")%>%readAll()
+result_map2019 <- raster("./data/testarea_unet/2019_out/mosaic.tif")%>%readAll()
+result_map2021 <- raster("./data/testarea_unet/2021_out/mosaic.tif")%>%readAll()
+#viewRGB(input_img,layer.name = "input image", quantiles = c(0,1),r=1,g=2,b=3)+
+  #mapview(result_map,layer.name="street prediction", alpha.regions=0.4,na.alpha=0)
+  mapview(result_map2017,layer.name="street prediction in Doha 2017", alpha.regions=1,na.alpha=0)+
+  mapview(result_map2019,layer.name="street prediction in Doha 2019", alpha.regions=1,na.alpha=0)+
+  mapview(result_map2021,layer.name="street prediction in Doha 2021", alpha.regions=1,na.alpha=0)
+```
+
+```{r}
+plot(result_map2017, main = "2017")
+plot(result_map2019, main = "2019")
+plot(result_map2021, main = "2021")
+
+plot(result_map2021- result_map2017, main = "2017 to 2021")
+plot(result_map2021- result_map2019, main = "2019 to 2021")
+
+
+result_map_2017_binary = result_map2017
+result_map_2017_binary[result_map_2017_binary>=0.3] = 1
+result_map_2017_binary[result_map_2017_binary<0.3] = 0
+
+result_map_2019_binary = result_map2019
+result_map_2019_binary[result_map_2019_binary>=0.3] = 1
+result_map_2019_binary[result_map_2019_binary<0.3] = 0
+
+result_map_2021_binary = result_map2021
+result_map_2021_binary[result_map_2021_binary>=0.3] = 1
+result_map_2021_binary[result_map_2021_binary<0.3] = 0
+
+plot(result_map_2017_binary, main = "2017", legend = FALSE)
+plot(result_map_2019_binary, main = "2019", legend = FALSE)
+plot(result_map_2021_binary, main = "2021", legend = FALSE)
+
+plot(result_map_2021_binary - result_map_2017_binary, main="2017 - 2021", legend = FALSE)
+plot(result_map_2021_binary - result_map_2019_binary, main="2019 - 2021", legend = FALSE)
+plot(result_map_2019_binary - result_map_2017_binary, main="2017 - 2019", legend = FALSE)
+```
+
+```{r}
+# compare pixel sums
+result_map_2021_binary
+sum(values(result_map_2021_binary)) / sum(values(result_map_2017_binary))
+
+sum(values(result_map_2021_binary)) / sum(values(result_map_2019_binary))
+
+sum(values(result_map_2019_binary)) / sum(values(result_map_2017_binary))
+```
+
+
+
+
+# Methods
+
+
+# Results
+
+
+# Discussion/Conclusion
+
+
+# References
