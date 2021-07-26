@@ -1,18 +1,22 @@
 ---
-title: "Project report - Deep Learning for the Analysis of Remote Sensing Imagery from Nano Satellites"
-author: "Katharina Hovestadt (440 289), Lia Kirsch (437 494), Jannis Fröhlking (439 599)"
+title: Project report - Deep Learning for the Analysis of Remote Sensing Imagery from
+  Nano Satellites
+author: Katharina Hovestadt (440 289), Lia Kirsch (437 494), Jannis Fröhlking (439
+  599)
 date: "31 7 2021"
-bibliography: references.bib
 output:
+  pdf_document:
+    toc: yes
   html_document:
-    toc: true
+    toc: yes
     css: style.css
     number_sections: yes
+bibliography: references.bib
 ---
 
 ```{r standardize output, include=FALSE}
 library(knitr)
-opts_chunk$set(message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE, fig.width = 7, fig.height = 7, fig.align = "center")
+opts_chunk$set(message=FALSE, warning=FALSE, echo=TRUE, eval=FALSE, fig.width = 7, fig.height = 7, fig.align = "center")
 ```
 
 ```{r env, results=F,warning=F,message=F, eval=T}
@@ -78,8 +82,7 @@ To create masks for model training we obtained OpenStreetMap shapefiles of the s
 ## Preprocesssing
 Planet assigns not available pixel values with 0, which impedes combining images. Before merging images, we therefore assigned pixel values of 0 with NA values for each image. Because the nano satellite images of each year consist of multiple images from different swaths, we then merged single images to have one image covering the entire spatial extent of one year.
 To obtain accurate masks of the street network, a buffer was applied on the main roads according to their feature class. The buffer size depended on the importance of the road, from trunk roads with buffer size of 6 cells to tertiary roads with buffer size of 3 cells. After that the vector file was rasterized. 
-Add street mask plot.
-448 x 448 pixel subsets of the mask of bahrain streets as well as of the satellite image were created as the basis for building the model. 
+448 x 448 pixel subsets of the mask of Bahrain streets as well as of the satellite image were created as the basis for building the model. 
 
 
 ## Model building
@@ -228,6 +231,7 @@ result = max(x_poly,x)
 writeRaster(result, "data/training_unet/street_mask.tif", overwrite = TRUE)
 ```
 
+The white areas on the figure show the streets (TRUE) while black areas have no streets (FALSE). Bigger streets have a bigger size than smaller streets due to the buffering in the processing.
 ![Ground truth mask for streets in Bahrain](images/street_mask.jpg)
 
 ## Create Subsets
@@ -651,8 +655,15 @@ plot(diagnostics)
 
 ```
 
+
 ![Diagonstics of model training](images/diagnostics.png)
 ![Prediciton sample, left image is ground truth, image in the middle is the input subset of Bahrain, image on the right is the prediction](images/prediction_sample.png)
+
+The diagnostics display a valid model. With a binary accuracy of up to 0.83 and a loss of 0.17 for the training dataset after 15 epochs the model is well explained. The validation data support this.
+
+An example of one subset is shown. The image on the left shows the ground truth of the street mask, while the imagge in the middle is the iput subset of a satellite iamge from Bahrain. The picture on the right shows the prediction of the model. It is clearly visible that our algorithm is able to select streets and can select especially larger streets with a good confidence. 
+Smaller streets which are max. 3m wide have a lower probability to be detected. The lines are not so clearly visible. 
+
 
 ```{r save model}
 save_model_hdf5(pretrained_unet,filepath = "./pretrained_unet.h5")
@@ -662,7 +673,7 @@ save_model_hdf5(pretrained_unet,filepath = "./pretrained_unet.h5")
 pretrained_unet <- load_model_hdf5("./pretrained_unet.h5")
 ```
 
-## Predict for 2019 
+## Street Prediction for 2019 
 ```{r}
 sample <- floor(runif(n = 1,min = 1,max = 4))
   img_path <- as.character(testing(files)[[sample,1]])
@@ -841,7 +852,8 @@ plot_layer_activations(img_path = "./data/testarea_unet/2019_subsets/25.jpg", mo
 
 
 
-## Predict for 2017
+
+## Street Prediction for 2017
 
 ```{r create testarea subsets 2017}
 # Street Prediction for 2017
