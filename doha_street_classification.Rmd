@@ -72,8 +72,15 @@ Add street mask plot.
 
 
 ## Model building
+The model building workflow follows the pixel-by-pixel classification part of the tutorial “Introduction to Deep Learning in R for the Analysis of UAV-based Remote Sensing Data“ by Christian Knoth. This allows for the localisation of desired features in a target image based on a U-net architecture (Ronneberger). The architecture consists of two parts. The first part is the contracting path, which extracts spatial patterns and is made of convolutional and maxpooling layers. In the second part, the expansive path, the maps of spatial patterns are resampled back to the resolution of the input image by convolutional and upsampling layers combined with concatenated layers of the original patterns.
+The build model was trained on 70% of the training data and validated on the remaining 30% in 15 epochs. 
 
-#Planning
+## Classification
+In the next step the Doha images were prepared for predictions again by the creation of subsets. The model was used to predict street pixels on the subsets and then the subsets were rebuilt to the original extent. Following up, we decided to convert the resulting percentages of how likely the pixel is to be a street pixel into a binary classification street/no-street. As a threshold for a street pixel, we selected a value of at least 0.3. To compare the street network growth we created histograms of pixel values for each year.
+
+
+
+# Planning
 With the beginning of the project we planned to identify the growth and enhancement of infrastructure around the stadiums. After some research, we figured out that most stadiums are around the capital city Doha. We decided to cover the whole city.
 To detect a growth of infrastructure, we chose streets as indicators. Whenever a building is built a street needs to connect it.
 We planned to detect the streets with a binary classification. In a second step we wanted to do a more specific multiclass detection of streets, water, and recreation areas.
@@ -91,7 +98,7 @@ As a result, we were behind the schedule and it was no longer possible to create
 During the semester we usually met every Monday at 10am to work together on the classification. On Wednesdays we had our class where we were able to ask questions and present our proceedings. Due to the COVID-19 pandemic, all meetings were entirely online. Since only one person at a time was able to access the AWS instance, one shared the screen while another person took notes and the third one googled all questions.
 
 
-#Results
+# Results
 ## Data
 
 What you need:
