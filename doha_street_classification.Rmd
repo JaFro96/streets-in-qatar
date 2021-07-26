@@ -1179,7 +1179,7 @@ The 2017- 2019, 2017-2021, and 2019-2021 images show the change between a newly 
 Overall, it is noticeable that around the stadium an intesivisation and densification of streets can be seen. 
 
 # Discussion/Conclusion
-
+Comparing the different years, it is noticeable that some roads were classified as a change between road to no road. With more time it would be interesting to find out whether this classification is due to the selected satellite image and given inaccuracies, whether there is an error in the algorithm, or whether it is an actual ablation of the road. 
 # Lessons Learned
 Our group chose the study project mainly because we did not have the opportunity to work with deep learning during our study time. We were very interested in how to set up such a network. 
 In previous courses we were able to run unsupervised and supervised classifications but usually in a very small area.
