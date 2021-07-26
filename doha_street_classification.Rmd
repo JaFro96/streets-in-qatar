@@ -1,9 +1,10 @@
 ---
 title: "Project report - Deep Learning for the Analysis of Remote Sensing Imagery from Nano Satellites"
-author: "Katharina Hovestadt (440 289), Lia Kirsch, Jannis Fröhlking (439 599)"
+author: "Katharina Hovestadt (440 289), Lia Kirsch (437 494), Jannis Fröhlking (439 599)"
 date: "31 7 2021"
 output:
   html_document:
+    toc: true
     css: style.css
     number_sections: yes
 ---
@@ -30,7 +31,68 @@ library(dplyr)
 
 # Introduction
 
-# Data
+This report aims to show the process of exploring the sustainability of convolutional neural networks (CNNS). The subject of infrastructure growth round about the World Cup 2022 has been chosen to take up a topic that is currently being discussed in society  and to arouse interest in the topic of the growing infrastructure around a World Cup. 
+
+But also to show which methods, in this case deep learning can be used to produce well-founded results that one can rely on.
+Growth of infrastructure is a broad spectrum, because under the term infrastructure the most diverse elements are collected . Therefore, it needed a specification here. The specification of road growth was chosen because it is one of the most illustrative examples, which is close to the reality of life of many people.
+
+Topics that are discussed in society in regard to the world cup 2022 and are interesting for infrastructure growth can be clustered under the top themes of sustainability and violation of human rights. 
+
+There is a broad discussion about the growth of infrastructure at almost every major sporting event (European Championship, World Cup, Olympics). This is also the case at various world championships. In order for a country to host a World Cup, there are various guidelines that must be followed. Most countries, however, do not meet these guidelines and have to present plans that show that they will have a suitable infrastructure, e.g. stadiums, hotels, etc. by the start of the World Cup. In the case of the 2022 World Cup in Qatar, this means that since the announcement of the 2022 World Cup in Qatar, a massive expansion of infrastructure has been and is being driven forward. It can be seen that some stadiums are only built for the World Cup 2022. Furthermore a new airport and other infrastructure like hotels and public transport systems can be found. For that reason there is a huge discussion  on the sustainability of the World Cup in Qatar. Many are of the opinion that stadiums that are only built for the World Cup and are no longer used afterwards do not correspond to the sense of sustainable use. Also the operation of the stadiums is criticized, since this e.g. by the cooling in this hot region, releases much energy. This type of discussion is becoming even more important as Qatar has made a promise to hold the 2022 World Cup in a climate-neutral manner. Another discussion, which is particularly important in relation to the development of infrastructure is the way in which the infrastructure is built and by whom. A huge exploitation of guest workers in several branches can be found since 2011 in Qatar. According to research by Amnesty International more than 6500 guest workers have died in Qatar since the World Cup was awarded in 2011.  But the number of unreported cases seems to be even higher. 
+
+In order to be able to provide a further basis for the discussion on the expansion of the infrastructure this report refers on street growth. As this process is scientifically measurable. Furthermore street growth is important for infrastructure and networks and could be seen as an indicator for growth. 
+Therefore high-resolutional satellite imagery from nano satellites was analyzed and classified to answer the question of:
+
+How does the street infrastructure around the Khalifa International Stadium change from 2017 on according to the Soccer World cup in 2022?
+ 
+This report shows the different steps that were necessary to answer the question. 
+The first part focuses on the project goals. The second part provides an overview about the used methods. This is followed by a section highlighting how the project was planned and implemented. Part four focuses on the results found. Finally a section of lessons learned through the project can be found.
+
+# Project Goal
+The aim of this project was the detection of streets around the Khalifa International Stadium  and how it changed  from 2017 on according to the Soccer World Cup in 2022. Therefore several classification methods and challenges associated with them should be learned. Since the project is based on convolutional neural networks with keras and tensorflow the aim was to understand the key steps when using deep learning in remote sensing. Also because large amounts of data are used in this context it was necessary to learn how to use an AWS. This is linked to the challenges coming up when dealing with huge datasets. 
+
+
+Since a model was built the goals was to understand how to built, train and predict with it, The aim was to understand how to set up a model and furthermore to understand which validation methods are suitable for a good prediction. As an overarching goal the understanding of a deep learning factor must be mentioned.
+
+#Methods
+## Data
+### Nano Satellite Images
+The images used for model training and prediction were created by nano satellites from Planet and are provided by them as PSScene3Band products, which have a spatial resolution of 3 x 3 meter. We used a spatial extent located in Bahrain to train the image. The image is a visual product from the 28th of April, 2021. For prediction and comparison we used images around the Khalifa International Stadium, Doha (Qatar) every two years from 2017. To exclude seasonal irregularities we stuck to images of March and April (2017-04-22, 2019-03-27, 2021-03-18). 
+Add Plot of Bahrain rgb and one Doha rgb.
+
+
+### Street network vectors
+To create masks for model training we obtained OpenStreetMap shapefiles of the states from the Gulf Cooperation Council (GCC) from Geofabrik. The data can be downloaded via http://download.geofabrik.de/asia/gcc-states-latest-free.shp.zip. One of the provided shapefiles contains data about the street network (gis_osm_roads_free_1.shp), which we clipped to the spatial extent of our Bahrain training image via QGIS.
+
+## Preprocesssing
+Planet assigns not available pixel values with 0, which impedes combining images. Before merging images, we therefore assigned pixel values of 0 with NA values for each image. Because the nano satellite images of each year consist of multiple images from different swaths, we then merged single images to have one image covering the entire spatial extent of one year.
+To obtain accurate masks of the street network, a buffer was applied on the main roads according to their feature class. The buffer size depended on the importance of the road, from trunk roads with buffer size of 6 cells to tertiary roads with buffer size of 3 cells. After that the vector file was rasterized. 
+Add street mask plot.
+448 x 448 pixel subsets of the mask of bahrain streets as well as of the satellite image were created as the basis for building the model. 
+
+
+## Model building
+
+#Planning
+With the beginning of the project we planned to identify the growth and enhancement of infrastructure around the stadiums. After some research, we figured out that most stadiums are around the capital city Doha. We decided to cover the whole city.
+To detect a growth of infrastructure, we chose streets as indicators. Whenever a building is built a street needs to connect it.
+We planned to detect the streets with a binary classification. In a second step we wanted to do a more specific multiclass detection of streets, water, and recreation areas.
+We decided to have an eye on images in 2017, 2019 and 2021. 
+
+We introduced ourselves to the classification with convolutional neuronal networks using u-net and tensorflow with the guide of the OGH Summer School 2020 (https://dachro.github.io/ogh_summer_school_2020/Tutorial_DL_UAV.html). With this training we were able to establish a model for our binary classification.
+We realized that we need a second area for training of our model. We decided to train with data from Bahrain and were able to use OSM street data as our ground truth. We were able to train our model in time. 
+
+
+We started with a blockwise binary classification of the area with a focus on streets where we could see first changes. Afterwards, we began to establish the pixel wise binary classification. Due to a larger amount of data that needed to be considered, the AWS instance could not handle our classification anymore. In the first step, our RAM was increased by the lecturers but we still had to downsize the area of detection. We then chose the area around the Khalifa stadium in an outer area of Doha called Ar-Rayyan.
+Since we were not used to the AWS, it took us a while to identify missing RAM space as the issue of our error.
+
+As a result, we were behind the schedule and it was no longer possible to create a mature multiclass detection. We therefore decided to focus on the binary classification and tried our analysis with different images. Since we used non processed satellite images, the solar radiation mattered.
+
+During the semester we usually met every Monday at 10am to work together on the classification. On Wednesdays we had our class where we were able to ask questions and present our proceedings. Due to the COVID-19 pandemic, all meetings were entirely online. Since only one person at a time was able to access the AWS instance, one shared the screen while another person took notes and the third one googled all questions.
+
+
+#Results
+## Data
 
 What you need:
 - planet 3 band images of train region (Bahrain)
@@ -67,7 +129,7 @@ if(!file.exists("data/training_unet/bahrain_2021.tif")){
 
 
 if(!file.exists("data/testarea_unet/doha_2021.tif")){
-  setwd("data/20212files")
+  setwd("data/2021/files")
   files = list.files(pattern = ".tif$")
   filesList = as.list(files)
   stackList = lapply(filesList, stack)
@@ -1141,14 +1203,23 @@ sum(values(result_map_2019_binary)) / sum(values(result_map_2017_binary))
 
 
 
-
-# Methods
-
-
-# Results
-
-
 # Discussion/Conclusion
+
+# Lessons Learned
+Our group chose the study project mainly because we did not have the opportunity to work with deep learning during our study time. We were very interested in how to set up such a network. 
+In previous courses we were able to run unsupervised and supervised classifications but usually in a very small area.
+With the beginning of the course we had to learn how to handle Amazon Elastic Compute Cloud (Amazon EC2) instances. We usually used R Studio only on a local instance and not as the server-based version.
+
+With that came different challenges:
+On the one hand it was difficult to identify errors with a terminating instance. Supervising RAM and storage usage had to be established and learned. On the other hand, we had to figure out how much space our model will need when processing a certain amount of data. After extending the size the RAM on our server and reducing the image size, we were able to run the model within 20 minutes for 15 episodes. It usually was quite tricky to run the model with too large files because then the content of the RAM got lost and we had to run all code chunks again.
+
+After establishing the models and training our model with data from Bahrain, we did a first predicition on satellite images from Doha. The results were very bad, as we realized that we had to choose compulsory exaclty the same type of image from the same satellite with almost the same solar radiation and RGB values. 
+
+comparing images that are of the same product (equal value range) is easier than of different products  
+
+We were also able to expand our experience in handling validations with models. On the one hand, the process was consolidated and, on the other, it became clear once again how important it is to use the right test and training data. The selection of the cities of Doha and Bahrain proved to be very useful, as it did not overfitted the model.  
+
+The project could, of course, be expanded. We would have liked to do a mulitclass detection to see which steps would be necessary and to have a comparison between the different detections. Additionally, it would be interesting to see how the prediction works with a larger section, but this would require much more memory. Also, the street growth results could be compared to actual planning data for the city of Doha. However, this is beyond the scope of a feasible study project.
 
 
 # References
