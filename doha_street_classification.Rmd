@@ -65,23 +65,22 @@ Since a model was built the goals was to understand how to built, train and pred
 
 ### Nano Satellite Images
 The images used for model training and prediction were created by nano satellites from Planet and are provided by them as PSScene3Band products, which have a spatial resolution of 3 x 3 meter. We used a spatial extent located in Bahrain to train the image. The image is a visual product from the 28th of April, 2021. 
-```{r plot of Bahrain, eval = TRUE, echo=FALSE}
+```{r plot of Bahrain, eval = TRUE, echo=FALSE, fig.cap= "*Figure 1. Train area: Bahrain (2021)*"}
 plotRGB(stack("data/Bahrain_2021_3Band/bahrain_2021.tif"), main="Bahrain")
 ```
 For prediction and comparison we used images around the Khalifa International Stadium, Doha (Qatar) every two years from 2017. To exclude seasonal irregularities we stuck to images of March and April (2017-04-22, 2019-03-27, 2021-03-18). Below the image of 2021 is plotted.
 
-```{r plot doha rgb, eval = T, echo = F}
+```{r plot doha rgb, eval = T, echo = F, fig.height = 4, fig.cap= "*Figure 2. Test area: Bahrain (2021)*"}
 plotRGB(stack("data/testarea_unet/doha_2021.tif"), main="Bahrain")
 ```
 
-
-
 ### Street network vectors
-To create masks for model training we obtained OpenStreetMap shapefiles of the states from the Gulf Cooperation Council (GCC) from Geofabrik. The data can be downloaded via http://download.geofabrik.de/asia/gcc-states-latest-free.shp.zip. One of the provided shapefiles contains data about the street network (gis_osm_roads_free_1.shp), which we clipped to the spatial extent of our Bahrain training image via QGIS.
+To create masks for model training we obtained OpenStreetMap shapefiles of the states from the Gulf Cooperation Council (GCC) from Geofabrik. The data can be downloaded via http://download.geofabrik.de/asia/gcc-states-latest-free.shp.zip. One of the provided shapefiles contains data about the street network (gis_osm_roads_free_1.shp), which we clipped to the spatial extent of our Bahrain training image via QGIS [@QGISDevelopmentTeam.2021].
 
 ## Preprocesssing
 Planet assigns not available pixel values with 0, which impedes combining images. Before merging images, we therefore assigned pixel values of 0 with NA values for each image. Because the nano satellite images of each year consist of multiple images from different swaths, we then merged single images to have one image covering the entire spatial extent of one year.
 To obtain accurate masks of the street network, a buffer was applied on the main roads according to their feature class. The buffer size depended on the importance of the road, from trunk roads with buffer size of 6 cells to tertiary roads with buffer size of 3 cells. After that the vector file was rasterized. 
+Add street mask plot.
 448 x 448 pixel subsets of the mask of Bahrain streets as well as of the satellite image were created as the basis for building the model. 
 
 
@@ -91,8 +90,6 @@ The build model was trained on 70% of the training data and validated on the rem
 
 ## Classification
 In the next step the Doha images were prepared for predictions again by the creation of subsets. The model was used to predict street pixels on the subsets and then the subsets were rebuilt to the original extent. Following up, we decided to convert the resulting percentages of how likely the pixel is to be a street pixel into a binary classification street/no-street. As a threshold for a street pixel, we selected a value of at least 0.3. To compare the street network growth we created histograms of pixel values for each year.
-
-
 
 # Planning
 With the beginning of the project we planned to identify the growth and enhancement of infrastructure around the stadiums. After some research, we figured out that most stadiums are around the capital city Doha. We decided to cover the whole city.
