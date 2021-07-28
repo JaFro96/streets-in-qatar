@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.23 (TeX Live 2021/W32TeX) (preloaded format=pdflatex 2021.7.29)  29 JUL 2021 00:08
+This is pdfTeX, Version 3.141592653-2.6-1.40.23 (TeX Live 2021/W32TeX) (preloaded format=pdflatex 2021.7.29)  29 JUL 2021 00:36
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -538,7 +538,14 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 134
 .
 (c:/Users/janni/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
-) (./final_assignment.toc)
+) (./final_assignment.toc
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <10> on input line 4.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <7> on input line 4.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <5> on input line 4.
+)
 \tf@toc=\write5
 \openout5 = `final_assignment.toc'.
 
@@ -549,27 +556,20 @@ File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 ) [1
 
 {c:/Users/janni/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdfte
-x.map}]
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 272.
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 272.
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 272.
-[2]
+x.map}] [2]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
 (Font)              Font shape `T1/lmtt/b/n' tried instead on input line 290.
 [3]
-<final_assignment_files/figure-latex/plot of Bahrain-1.pdf, id=65, 505.89pt x 5
-05.89pt>
+<final_assignment_files/figure-latex/plot of Bahrain-1.pdf, id=112, 505.89pt x 
+505.89pt>
 File: final_assignment_files/figure-latex/plot of Bahrain-1.pdf Graphic file (t
 ype pdf)
 <use final_assignment_files/figure-latex/plot of Bahrain-1.pdf>
 Package pdftex.def Info: final_assignment_files/figure-latex/plot of Bahrain-1.
 pdf  used on input line 355.
 (pdftex.def)             Requested size: 469.76265pt x 469.76265pt.
-<final_assignment_files/figure-latex/plot doha rgb-1.pdf, id=66, 505.89pt x 289
-.08pt>
+<final_assignment_files/figure-latex/plot doha rgb-1.pdf, id=113, 505.89pt x 28
+9.08pt>
 File: final_assignment_files/figure-latex/plot doha rgb-1.pdf Graphic file (typ
 e pdf)
 <use final_assignment_files/figure-latex/plot doha rgb-1.pdf>
@@ -577,21 +577,27 @@ Package pdftex.def Info: final_assignment_files/figure-latex/plot doha rgb-1.pd
 f  used on input line 364.
 (pdftex.def)             Requested size: 469.76265pt x 268.43579pt.
 [4] [5 <./final_assignment_files/figure-latex/plot of Bahrain-1.pdf>]
-<final_assignment_files/figure-latex/plot street mask-1.pdf, id=82, 505.89pt x 
-505.89pt>
+Underfull \vbox (badness 10000) detected at line 424
+ []
+
+
+Underfull \vbox (badness 10000) detected at line 424
+ []
+
+[6 <./final_assignment_files/figure-latex/plot doha rgb-1.pdf>]
+<final_assignment_files/figure-latex/plot street mask-1.pdf, id=140, 505.89pt x
+ 505.89pt>
 File: final_assignment_files/figure-latex/plot street mask-1.pdf Graphic file (
 type pdf)
 <use final_assignment_files/figure-latex/plot street mask-1.pdf>
 Package pdftex.def Info: final_assignment_files/figure-latex/plot street mask-1
 .pdf  used on input line 432.
 (pdftex.def)             Requested size: 469.76265pt x 469.76265pt.
-[6 <./final_assignment_files/figure-latex/plot doha rgb-1.pdf>] [7 <./final_ass
-ignment_files/figure-latex/plot street mask-1.pdf>]
 
 LaTeX Font Warning: Font shape `T1/lmtt/bx/it' in size <10> not available
 (Font)              Font shape `T1/lmtt/b/sl' tried instead on input line 457.
 
-[8]
+[7] [8 <./final_assignment_files/figure-latex/plot street mask-1.pdf>]
 LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 
 528.
 (c:/Users/janni/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/ts1lmtt.fd
@@ -606,12 +612,12 @@ LaTeX Font Warning: Font shape `TS1/lmtt/bx/it' in size <10> not available
 Underfull \vbox (badness 2318) detected at line 583
  []
 
-[9] [10]
-Underfull \vbox (badness 10000) detected at line 739
+[9]
+Underfull \vbox (badness 3690) detected at line 595
  []
 
-
-Underfull \vbox (badness 10000) detected at line 739
+[10]
+Underfull \vbox (badness 2318) detected at line 739
  []
 
 [11]
@@ -622,16 +628,16 @@ Underfull \vbox (badness 10000) detected at line 739
 Underfull \vbox (badness 10000) detected at line 739
  []
 
-[12]
-Overfull \vbox (0.52277pt too high) detected at line 812
+[12] [13]
+Underfull \vbox (badness 5504) detected at line 859
  []
 
-[13]
-Underfull \vbox (badness 3690) detected at line 859
+[14]
+Underfull \vbox (badness 3690) detected at line 902
  []
 
-[14] [15] [16]
-<images/diagnostics.png, id=149, 481.8pt x 481.8pt>
+[15] [16]
+<images/diagnostics.png, id=197, 481.8pt x 481.8pt>
 File: images/diagnostics.png Graphic file (type png)
 <use images/diagnostics.png>
 Package pdftex.def Info: images/diagnostics.png  used on input line 989.
@@ -641,7 +647,149 @@ Overfull \hbox (12.05849pt too wide) in paragraph at lines 989--990
  [][] 
  []
 
-[17 <./images/diagnostics.png>]
-!pdfTeX error: pdflatex.exe (file ./images/prediction_sample.png): reading imag
-e file failed
- ==> Fatal error occurred, no output PDF file produced!
+[17] [18 <./images/diagnostics.png>]
+<images/prediction_sample.png, id=208, 481.8pt x 481.8pt>
+File: images/prediction_sample.png Graphic file (type png)
+<use images/prediction_sample.png>
+Package pdftex.def Info: images/prediction_sample.png  used on input line 1029.
+
+(pdftex.def)             Requested size: 469.77148pt x 469.77148pt.
+[19 <./images/prediction_sample.png>]
+<final_assignment_files/figure-latex/sample 25 2017-1.pdf, id=215, 505.89pt x 5
+05.89pt>
+File: final_assignment_files/figure-latex/sample 25 2017-1.pdf Graphic file (ty
+pe pdf)
+<use final_assignment_files/figure-latex/sample 25 2017-1.pdf>
+Package pdftex.def Info: final_assignment_files/figure-latex/sample 25 2017-1.p
+df  used on input line 1118.
+(pdftex.def)             Requested size: 469.76265pt x 469.76265pt.
+[20] [21 <./final_assignment_files/figure-latex/sample 25 2017-1.pdf>]
+<final_assignment_files/figure-latex/activation layers 2017-1.pdf, id=232, 505.
+89pt x 505.89pt>
+File: final_assignment_files/figure-latex/activation layers 2017-1.pdf Graphic 
+file (type pdf)
+<use final_assignment_files/figure-latex/activation layers 2017-1.pdf>
+Package pdftex.def Info: final_assignment_files/figure-latex/activation layers 
+2017-1.pdf  used on input line 1136.
+(pdftex.def)             Requested size: 469.76265pt x 469.76265pt.
+[22 <./final_assignment_files/figure-latex/activation layers 2017-1.pdf>]
+<final_assignment_files/figure-latex/compare histogram-1.pdf, id=244, 505.89pt 
+x 505.89pt>
+File: final_assignment_files/figure-latex/compare histogram-1.pdf Graphic file 
+(type pdf)
+<use final_assignment_files/figure-latex/compare histogram-1.pdf>
+Package pdftex.def Info: final_assignment_files/figure-latex/compare histogram-
+1.pdf  used on input line 1175.
+(pdftex.def)             Requested size: 469.76265pt x 469.76265pt.
+<final_assignment_files/figure-latex/unnamed-chunk-3-1.pdf, id=245, 401.5pt x 3
+01.125pt>
+File: final_assignment_files/figure-latex/unnamed-chunk-3-1.pdf Graphic file (t
+ype pdf)
+<use final_assignment_files/figure-latex/unnamed-chunk-3-1.pdf>
+Package pdftex.def Info: final_assignment_files/figure-latex/unnamed-chunk-3-1.
+pdf  used on input line 1188.
+(pdftex.def)             Requested size: 401.53575pt x 301.15181pt.
+<final_assignment_files/figure-latex/plot prediction results-1.pdf, id=246, 505
+.89pt x 867.24pt>
+File: final_assignment_files/figure-latex/plot prediction results-1.pdf Graphic
+ file (type pdf)
+<use final_assignment_files/figure-latex/plot prediction results-1.pdf>
+Package pdftex.def Info: final_assignment_files/figure-latex/plot prediction re
+sults-1.pdf  used on input line 1192.
+(pdftex.def)             Requested size: 379.43199pt x 650.45488pt.
+
+LaTeX Warning: Float too large for page by 24.52487pt on input line 1197.
+
+<final_assignment_files/figure-latex/plot prediction results development-1.pdf,
+ id=247, 505.89pt x 867.24pt>
+File: final_assignment_files/figure-latex/plot prediction results development-1
+.pdf Graphic file (type pdf)
+<use final_assignment_files/figure-latex/plot prediction results development-1.
+pdf>
+Package pdftex.def Info: final_assignment_files/figure-latex/plot prediction re
+sults development-1.pdf  used on input line 1201.
+(pdftex.def)             Requested size: 379.43199pt x 650.45488pt.
+
+LaTeX Warning: Float too large for page by 23.9693pt on input line 1206.
+
+[23 <./final_assignment_files/figure-latex/unnamed-chunk-3-1.pdf>] [24 <./final
+_assignment_files/figure-latex/compare histogram-1.pdf>] [25 <./final_assignmen
+t_files/figure-latex/plot prediction results-1.pdf>] [26 <./final_assignment_fi
+les/figure-latex/plot prediction results development-1.pdf>]
+<final_assignment_files/figure-latex/plot binary prediction results-1.pdf, id=3
+18, 505.89pt x 867.24pt>
+File: final_assignment_files/figure-latex/plot binary prediction results-1.pdf 
+Graphic file (type pdf)
+<use final_assignment_files/figure-latex/plot binary prediction results-1.pdf>
+Package pdftex.def Info: final_assignment_files/figure-latex/plot binary predic
+tion results-1.pdf  used on input line 1243.
+(pdftex.def)             Requested size: 379.43199pt x 650.45488pt.
+
+LaTeX Warning: Float too large for page by 24.52487pt on input line 1248.
+
+
+Overfull \hbox (175.9931pt too wide) in paragraph at lines 1275--1275
+[]\T1/lmtt/m/n/10 ## [1] "2021 the number fo street pixels is 2.197736 times of
+ the amount in 2017 and 2.281845 times of the amount in 2019."[] 
+ []
+
+[27] [28 <./final_assignment_files/figure-latex/plot binary prediction results-
+1.pdf>]
+<final_assignment_files/figure-latex/view rgb of doha from 2017 to 2019-1.pdf, 
+id=339, 505.89pt x 505.89pt>
+File: final_assignment_files/figure-latex/view rgb of doha from 2017 to 2019-1.
+pdf Graphic file (type pdf)
+<use final_assignment_files/figure-latex/view rgb of doha from 2017 to 2019-1.p
+df>
+Package pdftex.def Info: final_assignment_files/figure-latex/view rgb of doha f
+rom 2017 to 2019-1.pdf  used on input line 1298.
+(pdftex.def)             Requested size: 469.76265pt x 469.76265pt.
+[29 <./final_assignment_files/figure-latex/view rgb of doha from 2017 to 2019-1
+.pdf>] [30]
+Overfull \hbox (69.79561pt too wide) in paragraph at lines 1479--1483
+[][]\T1/lmr/m/n/10 OpenStreetMap con-trib-u-tors. 2017. ``Planet dump re-trieve
+d from https://planet.osm.org .''[] https://www.openstreetmap.org[]. 
+ []
+
+[31]
+Underfull \hbox (badness 10000) in paragraph at lines 1507--1511
+[]$\T1/lmr/m/n/10 https : / / www . theguardian . com / global -[] development 
+/ 2021 / feb / 23 / revealed -[] migrant -[] worker -[] deaths -[]
+ []
+
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 1
+556.
+(c:/Users/janni/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/ts1lmr.fd
+File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+) [32] (./final_assignment.aux)
+Package rerunfilecheck Info: File `final_assignment.out' has not changed.
+(rerunfilecheck)             Checksum: 799E8E7922E5FC6D8EAABDBC2F8CDF39;1696.
+ ) 
+Here is how much of TeX's memory you used:
+ 10947 strings out of 480502
+ 166998 string characters out of 5898081
+ 482038 words of memory out of 5000000
+ 28316 multiletter control sequences out of 15000+600000
+ 455233 words of font info for 73 fonts, out of 8000000 for 9000
+ 14 hyphenation exceptions out of 8191
+ 60i,6n,66p,633b,369s stack positions out of 5000i,500n,10000p,200000b,80000s
+{c:/Users/janni/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1.
+enc}{c:/Users/janni/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ec
+.enc}<c:/Users/janni/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/l
+mbx10.pfb><c:/Users/janni/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public
+/lm/lmbx12.pfb><c:/Users/janni/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/p
+ublic/lm/lmr10.pfb><c:/Users/janni/AppData/Roaming/TinyTeX/texmf-dist/fonts/typ
+e1/public/lm/lmr12.pfb><c:/Users/janni/AppData/Roaming/TinyTeX/texmf-dist/fonts
+/type1/public/lm/lmr17.pfb><c:/Users/janni/AppData/Roaming/TinyTeX/texmf-dist/f
+onts/type1/public/lm/lmri10.pfb><c:/Users/janni/AppData/Roaming/TinyTeX/texmf-d
+ist/fonts/type1/public/lm/lmtk10.pfb><c:/Users/janni/AppData/Roaming/TinyTeX/te
+xmf-dist/fonts/type1/public/lm/lmtko10.pfb><c:/Users/janni/AppData/Roaming/Tiny
+TeX/texmf-dist/fonts/type1/public/lm/lmtt10.pfb><c:/Users/janni/AppData/Roaming
+/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtti10.pfb>
+Output written on final_assignment.pdf (32 pages, 16611287 bytes).
+PDF statistics:
+ 510 PDF objects out of 1000 (max. 8388607)
+ 395 compressed objects within 4 object streams
+ 103 named destinations out of 1000 (max. 500000)
+ 186 words of extra memory for PDF output out of 10000 (max. 10000000)
+

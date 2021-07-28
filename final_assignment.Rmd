@@ -712,11 +712,7 @@ if(!file.exists("pretrained_unet.h5")){
 }
 ```
 
-```{r plot diagnostics, fig.cap="Diagonstics of model training"}
-# we saved the diagnostics to a png file to save computation time
-include_graphics("images/diagnostics.png")
-# <p style="text-align: center;">![Diagonstics of model training](images/diagnostics.png)</p>
-```
+![Diagonstics of model training](images/diagnostics.png)
 
 The diagnostics display a valid model. With a binary accuracy of up to 0.83 and a loss of 0.17 for the training dataset after 15 epochs, the model is well explained. The validation data support this.
 
@@ -741,7 +737,7 @@ if(!file.exists("pretrained_unet.h5")){
 }
 ```
 
-<p style="text-align: center;">![Prediciton sample, ground truth (left), subset of Bahrain (center), prediction (right)](images/prediction_sample.png)</p>
+![Prediciton sample, ground truth (left), subset of Bahrain (center), prediction (right)](images/prediction_sample.png)
 
 An example of one subset is shown. The image on the left shows the ground truth of the street mask, while the image in the middle is the input subset of a satellite image from Bahrain. The picture on the right shows the prediction of the model. It is clearly visible that our algorithm is able to select streets and can select especially larger streets with a good confidence. 
 Smaller streets which are max. 3m wide have a lower probability of being detected. The lines are not so clearly visible. 
