@@ -58,7 +58,7 @@ The first part focuses on the project goals. The second part provides an overvie
 The aim of this project was the detection of streets around the Khalifa International Stadium  and how it changed  from 2017 on according to the Soccer World Cup in 2022. Therefore several classification methods and challenges associated with them should be learned. Since the project is based on convolutional neural networks with *keras* and *tensorflow* the aim was to understand the key steps when using deep learning in remote sensing. Also because large amounts of data are used in this context it was necessary to learn how to use an *AWS*. This is linked to the challenges coming up when dealing with huge datasets. 
 
 
-Since a model was build the goal was to understand how to built, train and predict with it, The aim was to understand how to set up a model and furthermore to understand which validation methods are suitable for a good prediction. As an overarching goal the understanding of a deep learning factor must be mentioned.
+Since a model was build the goal was to understand how to built, train and predict with it. The aim was to understand how to set up a model and furthermore to understand which validation methods are suitable for a good prediction. As an overarching goal the understanding of a deep learning factor must be mentioned.
 
 # Methods
 
@@ -858,7 +858,7 @@ legend("topright", inset=.02, title="Year",
    horiz=TRUE, cex=0.8)
 ```
 
-In the Figure 'Classified Street Pixels comparison' it can be seen that street pixels have more than doubled from 2021 - 2017 and are stable between 2017 and 2019. This leads to the assumption that there must be a construction boom between 2019 and 2021. This assumption is solidified when analyzing the images below.
+In figure seven it can be seen that street pixels have more than doubled from 2021 - 2017 and are stable between 2017 and 2019. This leads to the assumption that there must be a construction boom between 2019 and 2021. This assumption is solidified when analyzing figures nine and ten.
 
 ```{r,echo=F,warning=F, message=F,results=T,out.width="100%"}
 mapviewOptions(basemaps = c("Esri_WorldImagery", "OpenStreetMap.DE"),
@@ -941,8 +941,9 @@ sum_19_17 = sum(values(result_map_2019_binary)) / sum(values(result_map_2017_bin
 sprintf("2021 the number fo street pixels is %f times of the amount in 2017 and %f times of the amount in 2019.", sum_21_17, sum_21_19)
 ```
 
-The 2017-2019, 2017-2021, and 2019-2021 images show the change between a newly added road (dark green) to roads that are no longer there (white). Again, it is noticeable that the number of dark green roads is higher in 2017-2021 and 2019-2021. The value between 2017-2021 seems to be justified with the boom between 2019-2021. Furthermore, it is noticeable that some roads are classified as a change to no road, which are again labeled as new roads in later years. From 2017-2021 east of the stadium, another main road seems to occur. In the western part indications of a settlement structure can be seen.
+Figure nine shows the change between a newly added road (dark green) to roads that are no longer there (red). Again, it is noticeable that the number of dark green roads is higher in 2017-2021 and 2019-2021. The value between 2017-2021 seems to be justified with the boom between 2019-2021. Furthermore, it is noticeable that some roads are classified as a change to no road, which are again labeled as new roads in later years. From 2017-2021 east of the stadium, another main road seems to occur. In the western part indications of a settlement structure can be seen.
 Overall, it is noticeable that around the stadium an intensification and densification of streets can be seen. 
+In figure nine and ten it is noticeable that first larger roads seem to be added and then there seems to be a development of smaller roads.
 
 ```{r view rgb of doha from 2017 to 2019, fig.cap="Doha 2017 (top), Doha 2021 (bottom)"}
 par(mfrow=c(2,1), mar=c(1,2,1,2))
@@ -950,12 +951,12 @@ plotRGB(stack("data/testarea_unet/doha_2017.tif"),r=1,b=3, main="Doha 2017")
 plotRGB(stack("data/testarea_unet/doha_2021.tif"),r=1,b=3, main="Doha 2021")
 ```
 
-The satellite images from 2017 (Figure 4) and 2021 (Figure 5) show that the horizontal main road in the north of the Khalifa stadium was under construction in 2017 and finished in 2021. This is visible in our 2017-2021 plot. 
+The satellite images from 2017 (Figure 4) and 2021 (Figure 5) show that the horizontal main road in the north of the Khalifa stadium was under construction in 2017 and finished in 2021. This is visible in figure nine, plot 2017-2021. 
 
-The removed streets on the top right of Figure 4 are displayed in our prediction as well. The road was extended to a highway, so roundabouts and junctions were removed.
+The removed streets on the top right of Figure nine are displayed in our prediction as well. The road was extended to a highway, so roundabouts and junctions were removed.
 
-A new street area in the west of the stadium can be partly seen in our prediction-difference plots. This shows an opportunity to enhance our model and to calibrate and train it in a more detailed way.
-This applies as well for streets in residential areas. Here might be differences because of streets that are made from soil and sand instead of asphalt. So, it is harder to distinguish the street from other areas. A second suggestion is that the 3m resolution of the Planet satellite images is not enough. A street might be less than 3m and cannot be detected or is influenced, e.g. by a house standing next to it and sharing the same pixel. Depending on the inclination angle of the satellite, houses, trees and other high things might cover the street at some parts, so the pixel cannot be identified as a street in 2017. In 2021 there was a different angle and different pixels could be identified.
+A new street area in the west of the stadium can be partly seen in figure ten our prediction-difference plots. This shows an opportunity to enhance our model and to calibrate and train it in a more detailed way.
+This applies as well for streets in residential areas. Here might be differences because of streets that are made from soil and sand instead of asphalt. So, it is harder to distinguish the street from other areas. A second suggestion is that the 3m resolution of the Planet satellite images is not enough. A street might be less than 3m and cannot be detected or is influenced, e.g. by a house standing next to it and sharing the same pixel. Depending on the inclination angle of the satellite image data from 2017, houses, trees and other high things might cover the street at some parts, so the pixel cannot be identified as a street. With the data basis from 2021 there was a different angle and different pixels could be identified.
 
 # Conclusion
 Our model is able to detect streets and changes in the street infrastructure in a desert state like Qatar. It is able to show areas where streets were removed and where streets were built. Only the residential areas could be improved. However, this is most likely not a bug in our model but a problem in the satellite data such as covering, subsurface and tilt angle for solar radiation.
@@ -970,7 +971,7 @@ On the one hand it was difficult to identify errors with a terminating instance.
 
 After establishing the models and training our model with data from Bahrain, we did a first prediction on satellite images from Doha. The results were very bad, as we realized that we had to choose exactly the same type of image from the same satellite with almost the same solar radiation and RGB values. 
 
-comparing images that are of the same product (equal value range) is easier than of different products  
+Comparing images that are of the same product (equal value range) is easier than of different products  
 
 We were also able to expand our experience in handling validations with models. On the one hand, the process was consolidated and, on the other, it became clear once again how important it is to use the right test and training data. The selection of the cities of Doha and Bahrain proved to be very useful, as it did not overfit the model.  
 
