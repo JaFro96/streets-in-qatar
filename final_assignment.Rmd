@@ -1,6 +1,7 @@
 ---
 title: Project report - Deep Learning for the Analysis of Remote Sensing Imagery from
   Nano Satellites
+subtitle: Construction boom in Qatar with respect to the soccer world cup 2022
 author: Katharina Hovestadt (440 289), Lia Kirsch (437 494), Jannis Fröhlking (439
   599)
 date: "2021-08-03"
@@ -9,6 +10,7 @@ output:
     toc: yes
     css: style.css
     number_sections: yes
+    code_folding: show
   pdf_document:
     toc: yes
 bibliography: references.bib
@@ -44,7 +46,7 @@ Growth of infrastructure is a broad spectrum, because under the term infrastruct
 
 Topics that are discussed in society in regard to the world cup 2022 and are interesting for infrastructure growth can be clustered under the top themes of sustainability and violation of human rights. 
 
-There is a broad discussion about the growth of infrastructure at almost every major sporting event (European Championship, World Cup, Olympics). This is also the case at various world championships. In order for a country to host a World Cup, there are various guidelines that must be followed. Most countries, however, do not meet these guidelines and have to present plans that show that they will have a suitable infrastructure, e.g. stadiums, hotels, etc. by the start of the World Cup. In the case of the 2022 World Cup in Qatar, this means that since the announcement of the 2022 World Cup in Qatar, a massive expansion of infrastructure has been and is being driven forward. It can be seen that some stadiums are only built for the World Cup 2022 [@Stern]. Furthermore a new airport and other infrastructure like hotels and public transport systems can be found [@Stern]. For that reason there is a huge discussion  on the sustainability of the World Cup in Qatar. Many are of the opinion that stadiums that are only built for the World Cup and are no longer used afterwards do not correspond to the sense of sustainable use [@Stern]. Also the operation of the stadiums is criticized, since this e.g. by the cooling in this hot region, releases much energy [@kicker]. This type of discussion is becoming even more important as Qatar has made a promise to hold the 2022 World Cup in a climate-neutral manner [@tz]. Another discussion, which is particularly important in relation to the development of infrastructure is the way in which the infrastructure is built and by whom. A huge exploitation of guest workers in several branches can be found since 2011 in Qatar [@benjaminBest]. According to research by Amnesty International more than 6500 guest workers have died in Qatar since the World Cup was awarded in 2011 [@TheGuardian.2021].  But the number of unreported cases seems to be even higher [@TheGuardian.2021].
+There is a broad discussion about the growth of infrastructure at almost every major sporting event (European Championship, World Cup, Olympics). This is also the case at various world championships. In order for a country to host a World Cup, there are various guidelines that must be followed. Most countries, however, do not meet these guidelines and have to present plans that show that they will have a suitable infrastructure, e.g. stadiums, hotels, by the start of the World Cup. In the case of the 2022 World Cup in Qatar, this means that since the announcement of the 2022 World Cup in Qatar, a massive expansion of infrastructure has been and is being driven forward. It can be seen that some stadiums are only built for the World Cup 2022 [@Stern]. Furthermore a new airport and other infrastructure like hotels and public transport systems can be found [@Stern]. For that reason there is a huge discussion  on the sustainability of the World Cup in Qatar. Many have the opinion that stadiums that are only built for the World Cup and are no longer used afterwards do not correspond to the sense of sustainable use [@Stern]. Also the operation of the stadiums is criticized, since this e.g. by the cooling in this hot region, releases much energy [@kicker]. This type of discussion is becoming even more important as Qatar has made a promise to hold the 2022 World Cup in a climate-neutral manner [@tz]. Another discussion, which is particularly important in relation to the development of infrastructure is the way in which the infrastructure is built and by whom. A huge exploitation of guest workers in several branches can be found since 2011 in Qatar [@benjaminBest]. According to research by Amnesty International more than 6500 guest workers have died in Qatar since the World Cup was awarded in 2011 [@TheGuardian.2021].  But the number of unreported cases seems to be even higher [@TheGuardian.2021].
 
 In order to be able to provide a further basis for the discussion on the expansion of the infrastructure, this report refers to street growth. As this process is scientifically measurable. Furthermore street growth is important for infrastructure and networks and could be seen as an indicator for growth. 
 Therefore high-resolution satellite imagery from nano satellites was analyzed and classified to answer the question of:
@@ -52,7 +54,7 @@ Therefore high-resolution satellite imagery from nano satellites was analyzed an
 How does the street infrastructure around the Khalifa International Stadium change from 2017 on according to the Soccer World cup in 2022?
  
 This report shows the different steps that were necessary to answer the question. 
-The first part focuses on the project goals. The second part provides an overview about the used methods. This is followed by a section highlighting how the project was planned and implemented. Part four focuses on the results found. Finally a section of lessons learned through the project can be found.
+The first part focuses on the project goals. The second part provides an overview about the used methods. After that results are presented and discussed. Part four focuses on lessons learned, followed by a section highlighting how the project was planned and implemented.
 
 # Project Goal
 The aim of this project was the detection of streets around the Khalifa International Stadium  and how it changed  from 2017 on according to the Soccer World Cup in 2022. Therefore several classification methods and challenges associated with them should be learned. Since the project is based on convolutional neural networks with *keras* and *tensorflow* the aim was to understand the key steps when using deep learning in remote sensing. Also because large amounts of data are used in this context it was necessary to learn how to use an *AWS*. This is linked to the challenges coming up when dealing with huge datasets. 
@@ -65,12 +67,12 @@ Since a model was build the goal was to understand how to built, train and predi
 ## Data
 
 ### Nano Satellite Images
-The images used for model training and prediction were created by nano satellites from Planet and are provided by them as PSScene3Band products, which have a spatial resolution of 3 x 3 meter. We used a spatial extent located in Bahrain to train the image. The image is a visual product from the 28th of April, 2021 (see Figure 1). 
+The images used for model training and prediction were created by nano satellites from Planet [@PlanetTeam.2017] and are provided by them as *PSScene3Band* products, which have a spatial resolution of 3 x 3 meter. We used a spatial extent located in Bahrain to train the image. The image is a visual product from the 28th of April, 2021 (see Figure 1). 
 
 For prediction and comparison we used images around the Khalifa International Stadium, Doha (Qatar) every two years from 2017. To exclude seasonal irregularities we stuck to images of March and April (2017-04-22, 2019-03-27, 2021-03-18). In Figure 2 the image of 2021 is plotted.
 
 ### Street Network Vectors
-To create masks for model training we obtained OpenStreetMap shapefiles of the states from the Gulf Cooperation Council (GCC) from Geofabrik [@OpenStreetMap]. The data can be downloaded via http://download.geofabrik.de/asia/gcc-states-latest-free.shp.zip. One of the provided shapefiles contains data about the street network (gis_osm_roads_free_1.shp), which we clipped to the spatial extent of our Bahrain training image via QGIS [@QGISDevelopmentTeam.2021].
+To create masks for model training we obtained OpenStreetMap shapefiles of the states from the Gulf Cooperation Council (GCC) from *Geofabrik* [@OpenStreetMap]. The data can be downloaded via http://download.geofabrik.de/asia/gcc-states-latest-free.shp.zip. One of the provided shapefiles contains data about the street network (gis_osm_roads_free_1.shp), which we clipped to the spatial extent of our Bahrain training image via QGIS [@QGISDevelopmentTeam.2021].
 
 ## Preprocesssing
 Planet assigns not available pixel values with 0, which impedes combining images. Before merging images, we therefore assigned pixel values of 0 with NA values for each image. Because the nano satellite images of each year consist of multiple images from different swaths, we then merged single images to have one image covering the entire spatial extent of one year.
@@ -795,7 +797,7 @@ rebuild_img(predictions_21,out_path = "./data/testarea_unet/2021_",
 
 One can clearly observe that the activation functions identified spatial patterns that are special for street structures. Figure 7 displays some of them on one subset image (Figure 6).
 
-```{r sample 25 2017, fig.cap="Sample image no 25. (2017)", message=F, fig.width = 4, fig.height = 4}
+```{r sample 25 2017, fig.cap="Sample image no 25. (2017)", fig.height=4, fig.width=4, message=FALSE, warning=FALSE}
 par(mfrow=c(1,1))
 plot(read_stars("./data/testarea_unet/2017_subsets/25.jpg"),rgb=c(1,2,3), main="25")
 ```
@@ -901,7 +903,7 @@ plot(result_map_2019_binary, main = "2019", legend = FALSE, axes = FALSE)
 plot(result_map_2021_binary, main = "2021", legend = FALSE, axes = FALSE)
 ```
 
-```{r plot prediction results development, fig.height=12, fig.cap="Development", echo=FALSE}
+```{r plot prediction results development, fig.height=12, fig.cap="Development of streets", echo=FALSE}
 col_pal <- colorRampPalette(c("red","white","green"))
 par(mfrow=c(3,1))
 plot(result_map_2021_binary - result_map_2017_binary, main="2017 - 2021", 
@@ -969,7 +971,7 @@ To detect a growth of infrastructure, we chose streets as indicators. Whenever a
 We planned to detect the streets with a binary classification. In a second step we wanted to do a more specific multiclass detection of streets, water, and recreation areas.
 We decided to have an eye on images in 2017, 2019 and 2021. 
 
-We introduced ourselves to the classification with convolutional neural networks using u-net and *tensorflow* following the guide of the OGH Summer School 2020 [@ChristianKnoth.2020]. With this training we were able to establish a model for our binary classification.
+We introduced ourselves to the classification with convolutional neural networks using *u-net* and *tensorflow* following the guide of the OGH Summer School 2020 [@ChristianKnoth.2020]. With this training we were able to establish a model for our binary classification.
 We realized that we need a second area for training our model. We decided to train with data from Bahrain and were able to use OSM street data as our ground truth. We were able to train our model in time. 
 
 We started with a blockwise binary classification of the area with a focus on streets where we could see first changes. Afterwards, we began to establish the pixel wise binary classification. Due to a larger amount of data that needed to be considered, the *AWS* instance could not handle our classification anymore. In the first step, our RAM was increased by the lecturers but we still had to downsize the area of detection. We then chose the area around the Khalifa stadium in an outer area of Doha called Ar-Rayyan.
@@ -983,6 +985,9 @@ During the semester we usually met every Monday at 10am to work together on the 
 <div id="refs"></div>
 
 # Appendices
+
+## GitHub
+The code and satellite images are available at https://github.com/JaFro96/streets-in-qatar.
 
 ## Used software
 All plots were created, and computations were done using QGIS 3.10.4 [@QGISDevelopmentTeam.2021] and R 4.1.0 [@R] with the following packages:
