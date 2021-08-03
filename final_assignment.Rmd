@@ -3,14 +3,14 @@ title: Project report - Deep Learning for the Analysis of Remote Sensing Imagery
   Nano Satellites
 author: Katharina Hovestadt (440 289), Lia Kirsch (437 494), Jannis Fröhlking (439
   599)
-date: "31 7 2021"
+date: "2021-08-03"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     toc: yes
     css: style.css
     number_sections: yes
+  pdf_document:
+    toc: yes
 bibliography: references.bib
 ---
 
@@ -19,7 +19,7 @@ library(knitr)
 opts_chunk$set(message=FALSE, warning=FALSE, echo=TRUE, fig.width = 7, fig.height = 7, fig.align = "center")
 ```
 
-```{r env, results=F,message=F}
+```{r env, message=FALSE, include=FALSE, results=F}
 # used libraries
 library(keras)
 library(tensorflow)
@@ -69,7 +69,7 @@ The images used for model training and prediction were created by nano satellite
 
 For prediction and comparison we used images around the Khalifa International Stadium, Doha (Qatar) every two years from 2017. To exclude seasonal irregularities we stuck to images of March and April (2017-04-22, 2019-03-27, 2021-03-18). In Figure 2 the image of 2021 is plotted.
 
-### Street network vectors
+### Street Network Vectors
 To create masks for model training we obtained OpenStreetMap shapefiles of the states from the Gulf Cooperation Council (GCC) from Geofabrik [@OpenStreetMap]. The data can be downloaded via http://download.geofabrik.de/asia/gcc-states-latest-free.shp.zip. One of the provided shapefiles contains data about the street network (gis_osm_roads_free_1.shp), which we clipped to the spatial extent of our Bahrain training image via QGIS [@QGISDevelopmentTeam.2021].
 
 ## Preprocesssing
@@ -694,7 +694,6 @@ if(!file.exists("pretrained_unet.h5")){
 
 ```{r train_unet}
 if(!file.exists("pretrained_unet.h5")){
-   
   compile(
     pretrained_unet,
     optimizer = optimizer_rmsprop(lr = 1e-5),
@@ -714,32 +713,30 @@ if(!file.exists("pretrained_unet.h5")){
 
 ![Diagonstics of model training](images/diagnostics.png)
 
-The diagnostics display a valid model. With a binary accuracy of up to 0.83 and a loss of 0.17 for the training dataset after 15 epochs, the model is well explained. The validation data support this.
+The diagnostics display a valid model (see Figure 4.). With a binary accuracy of up to 0.83 and a loss of 0.17 for the training dataset after 15 epochs, the model is well explained. The validation data support this.
 
-```{r fig.cap= "Prediciton sample, left image is ground truth, image in the middle is the input subset of Bahrain, image on the right is the prediction"}
-if(!file.exists("pretrained_unet.h5")){
-  sample <- floor(runif(n = 1,min = 1,max = 4))
-    img_path <- as.character(testing(files)[[sample,1]])
-    mask_path <- as.character(testing(files)[[sample,2]])
-    img <- magick::image_read(img_path)
-    mask <- magick::image_read(mask_path)
-    pred <- magick::image_read(as.raster(predict(object = pretrained_unet,
-                                                 validation_dataset)[sample,,,]))
-  
-    out <- magick::image_append(c(
-    magick::image_append(mask, stack = TRUE),
-    magick::image_append(img, stack = TRUE),
-    magick::image_append(pred, stack = TRUE)
-  )
-  )
-  
-  plot(out)
-}
+```{r eval=FALSE, fig.cap="Predicton sample, include=FALSE, left image is ground truth, image in the middle is the input subset of Bahrain, image on the right is the prediction", include=F}
+sample <- floor(runif(n = 1,min = 1,max = 4))
+  img_path <- as.character(testing(files)[[sample,1]])
+  mask_path <- as.character(testing(files)[[sample,2]])
+  img <- magick::image_read(img_path)
+  mask <- magick::image_read(mask_path)
+  pred <- magick::image_read(as.raster(predict(object = pretrained_unet,
+                                               validation_dataset)[sample,,,]))
+
+  out <- magick::image_append(c(
+  magick::image_append(mask, stack = TRUE),
+  magick::image_append(img, stack = TRUE),
+  magick::image_append(pred, stack = TRUE)
+)
+)
+
+plot(out)
 ```
 
-![Prediciton sample, ground truth (left), subset of Bahrain (center), prediction (right)](images/prediction_sample.png)
+![Prediction sample, ground truth (left), subset of Bahrain (center), prediction (right)](images/prediction_sample.png)
 
-An example of one subset is shown. The image on the left shows the ground truth of the street mask, while the image in the middle is the input subset of a satellite image from Bahrain. The picture on the right shows the prediction of the model. It is clearly visible that our algorithm is able to select streets and can select especially larger streets with a good confidence. 
+In Figure 5. an example of one subset is shown. The image on the left shows the ground truth of the street mask, while the image in the middle is the input subset of a satellite image from Bahrain. The picture on the right shows the prediction of the model. It is clearly visible that our algorithm is able to select streets and can select especially larger streets with a good confidence. 
 Smaller streets which are max. 3m wide have a lower probability of being detected. The lines are not so clearly visible. 
 
 ```{r save model}
@@ -796,11 +793,12 @@ rebuild_img(predictions_21,out_path = "./data/testarea_unet/2021_",
 
 # Results
 
-```{r sample 25 2017, fig.cap="Sample image no 25. (2017)", message=F}
-par(mfrow=c(1,1))
-plot(read_stars("./data/testarea_unet/2017_subsets/25.jpg"),rgb=c(1,2,3))
-```
+One can clearly observe that the activation functions identified spatial patterns that are special for street structures. Figure 7 displays some of them on one subset image (Figure 6).
 
+```{r sample 25 2017, fig.cap="Sample image no 25. (2017)", message=F, fig.width = 4, fig.height = 4}
+par(mfrow=c(1,1))
+plot(read_stars("./data/testarea_unet/2017_subsets/25.jpg"),rgb=c(1,2,3), main="25")
+```
 
 ```{r activation layers 2017, fig.cap="Three activation layers of sample 25 (2017)"}
 #visualize layers 3 and 10, channels 1 to 20
@@ -808,7 +806,6 @@ par(mfrow=c(3,4),mar=c(1,1,1,1),cex=0.5)
 plot_layer_activations(img_path = "./data/testarea_unet/2017_subsets/25.jpg", 
                        model=pretrained_unet ,activations_layers = c(2,3,5), channels = 1:4)
 ```
-
 
 ```{r activation layers 2019, include = F, fig.cap="Activation layers of sample image in 2019"}
 par(mfrow=c(1,1))
@@ -830,8 +827,6 @@ par(mfrow=c(3,4),mar=c(1,1,1,1),cex=0.5)
 plot_layer_activations(img_path = "./data/testarea_unet/2021_subsets/25.jpg", 
                        model=pretrained_unet ,activations_layers = c(2,3,5,6,8,9,10,12,13,14), channels = 1:4)
 ```
-
-## Compare Histograms
 
 ```{r compare histogram, fig.cap="Histogram of pixel values"}
 result_map_21 <- raster("./data/testarea_unet/2021_out/mosaic.tif")%>%readAll()
@@ -858,26 +853,22 @@ legend("topright", inset=.02, title="Year",
    horiz=TRUE, cex=0.8)
 ```
 
-In figure seven it can be seen that street pixels have more than doubled from 2021 - 2017 and are stable between 2017 and 2019. This leads to the assumption that there must be a construction boom between 2019 and 2021. This assumption is solidified when analyzing figures nine and ten.
+In Figure 8 it can be seen that street pixels have more than doubled from 2021 - 2017 and are stable between 2017 and 2019. This leads to the assumption that there must be a construction boom between 2019 and 2021. This assumption is solidified when analyzing figures nine and ten.
 
 ```{r,echo=F,warning=F, message=F,results=T,out.width="100%"}
-mapviewOptions(basemaps = c("Esri_WorldImagery", "OpenStreetMap.DE"),
-               raster.palette = grey.colors,
-               na.color = "magenta",
-               layers.control.pos = "topright")
-
+# mapviewOptions(basemaps = c("Esri_WorldImagery", "OpenStreetMap.DE"),layers.control.pos = "topright")
 viewRGB(stack("data/testarea_unet/doha_2017.tif"),layer.name = "Doha 2017 (RGB)", 
         quantiles = c(0,1),r=1,g=2,b=3)+
   viewRGB(stack("data/testarea_unet/doha_2019.tif"),layer.name = "Doha 2019 (RGB)", 
           quantiles = c(0,1),r=1,g=2,b=3)+
   viewRGB(stack("data/testarea_unet/doha_2021.tif"),layer.name = "Doha 2021 (RGB)", 
           quantiles = c(0,1),r=1,g=2,b=3)+
-  mapview(result_map_17,layer.name="street prediction in Doha 2017", alpha.regions=1,na.alpha=0)+
-  mapview(result_map_19,layer.name="street prediction in Doha 2019", alpha.regions=1,na.alpha=0)+
-  mapview(result_map_21,layer.name="street prediction in Doha 2021", alpha.regions=1,na.alpha=0)
+  mapview(result_map_17,layer.name="street prediction in Doha 2017", alpha.regions=0.8,na.alpha=0)+
+  mapview(result_map_19,layer.name="street prediction in Doha 2019", alpha.regions=0.8,na.alpha=0)+
+  mapview(result_map_21,layer.name="street prediction in Doha 2021", alpha.regions=0.8,na.alpha=0)
 ```
 
-```{r plot prediction results, fig.height=12, fig.cap="Street pixel probabilities (left), satellite image (right)", echo=FALSE}
+```{r plot prediction results, fig.height=12, fig.cap="Street pixel probabilities (left), satellite image (right), from top to bottom (2017,2019,2021)", echo=FALSE, eval = F}
 par(mfrow=c(3,2))
 plot(result_map_17, main = "2017", axes = FALSE, legend = FALSE)
 plotRGB(stack("data/testarea_unet/doha_2017.tif"),r=1,b=3)
@@ -889,15 +880,9 @@ plot(result_map_21, main = "2021", axes = FALSE, legend = FALSE)
 plotRGB(stack("data/testarea_unet/doha_2021.tif"),r=1,b=3)
 ```
 
-```{r plot prediction results development, fig.height=12, fig.cap="Development", echo=FALSE}
-col_pal <- colorRampPalette(c("red","white","green"))
-par(mfrow=c(3,1))
-plot(result_map_21- result_map_17, main = "2017 to 2021", col=col_pal(3))
-plot(result_map_21- result_map_19, main = "2019 to 2021", col=col_pal(3))
-plot(result_map_19- result_map_17, main = "2017 to 2019", col=col_pal(3))
-```
+The binary classification predictions of the streets are displayed in Figure 9.
 
-```{r plot binary prediction results, fig.height=12, fig.cap="Binary classifaction (left), development (right)"}
+```{r plot binary prediction results, fig.height=12, fig.cap="Binary classifaction (streets in green)"}
 result_map_2017_binary = result_map_17
 result_map_2017_binary[result_map_2017_binary>=0.3] = 1
 result_map_2017_binary[result_map_2017_binary<0.3] = 0
@@ -910,24 +895,24 @@ result_map_2021_binary = result_map_21
 result_map_2021_binary[result_map_2021_binary>=0.3] = 1
 result_map_2021_binary[result_map_2021_binary<0.3] = 0
 
-pal <- colorRampPalette(c("white","red"))
-par(mfrow=c(3,2))
+par(mfrow=c(3,1))
 plot(result_map_2017_binary, main = "2017", legend = FALSE, axes = FALSE)
+plot(result_map_2019_binary, main = "2019", legend = FALSE, axes = FALSE)
+plot(result_map_2021_binary, main = "2021", legend = FALSE, axes = FALSE)
+```
 
+```{r plot prediction results development, fig.height=12, fig.cap="Development", echo=FALSE}
+col_pal <- colorRampPalette(c("red","white","green"))
+par(mfrow=c(3,1))
 plot(result_map_2021_binary - result_map_2017_binary, main="2017 - 2021", 
      legend = FALSE, axes = FALSE, col = col_pal(3))
-
-plot(result_map_2019_binary, main = "2019", legend = FALSE, axes = FALSE)
 
 plot(result_map_2021_binary - result_map_2019_binary, main="2019 - 2021", 
      legend = FALSE, axes = FALSE, col = col_pal(3))
 
-plot(result_map_2021_binary, main = "2021", legend = FALSE, axes = FALSE)
-
 plot(result_map_2019_binary - result_map_2017_binary, main="2017 - 2019", 
      legend = FALSE, axes = FALSE, col = col_pal(3))
 ```
-
 
 ```{r comparison of street pixel amounts}
 # compare pixel sums
@@ -941,21 +926,22 @@ sum_19_17 = sum(values(result_map_2019_binary)) / sum(values(result_map_2017_bin
 sprintf("2021 the number fo street pixels is %f times of the amount in 2017 and %f times of the amount in 2019.", sum_21_17, sum_21_19)
 ```
 
-Figure nine shows the change between a newly added road (dark green) to roads that are no longer there (red). Again, it is noticeable that the number of dark green roads is higher in 2017-2021 and 2019-2021. The value between 2017-2021 seems to be justified with the boom between 2019-2021. Furthermore, it is noticeable that some roads are classified as a change to no road, which are again labeled as new roads in later years. From 2017-2021 east of the stadium, another main road seems to occur. In the western part indications of a settlement structure can be seen.
+Figure 10 shows the change between a newly added road (dark green) to roads that are no longer there (red). Again, it is noticeable that the number of dark green roads is higher in 2017-2021 and 2019-2021. The value between 2017-2021 seems to be justified with the boom between 2019-2021. Furthermore, it is noticeable that some roads are classified as a change to no road, which are again labeled as new roads in later years. From 2017-2021 east of the stadium, another main road seems to occur. In the western part indications of a settlement structure can be seen.
 Overall, it is noticeable that around the stadium an intensification and densification of streets can be seen. 
-In figure nine and ten it is noticeable that first larger roads seem to be added and then there seems to be a development of smaller roads.
+In Figure 9 and 10 it is noticeable that first larger roads seem to be added and then there seems to be a development of smaller roads.
 
-```{r view rgb of doha from 2017 to 2019, fig.cap="Doha 2017 (top), Doha 2021 (bottom)"}
-par(mfrow=c(2,1), mar=c(1,2,1,2))
+```{r view rgb of doha from 2017 to 2021, fig.cap="Doha 2017 (top), Doha 2019 (middle), Doha 2021 (bottom)"}
+par(mfrow=c(3,1), mar=c(1,2,1,2))
 plotRGB(stack("data/testarea_unet/doha_2017.tif"),r=1,b=3, main="Doha 2017")
+plotRGB(stack("data/testarea_unet/doha_2019.tif"),r=1,b=3, main="Doha 2019")
 plotRGB(stack("data/testarea_unet/doha_2021.tif"),r=1,b=3, main="Doha 2021")
 ```
 
-The satellite images from 2017 (Figure 4) and 2021 (Figure 5) show that the horizontal main road in the north of the Khalifa stadium was under construction in 2017 and finished in 2021. This is visible in figure nine, plot 2017-2021. 
+The satellite images from 2017 and 2021 (Figure 11) show that the horizontal main road in the north of the Khalifa stadium was under construction in 2017 and finished in 2021. This is visible in figure nine, plot 2017-2021. 
 
-The removed streets on the top right of Figure nine are displayed in our prediction as well. The road was extended to a highway, so roundabouts and junctions were removed.
+The removed streets on the top right of Figure 11 are displayed in our prediction as well. The road was extended to a highway, so roundabouts and junctions were removed.
 
-A new street area in the west of the stadium can be partly seen in figure ten our prediction-difference plots. This shows an opportunity to enhance our model and to calibrate and train it in a more detailed way.
+A new street area in the west of the stadium can be partly seen in Figure 10, our prediction-difference plots. This shows an opportunity to enhance our model and to calibrate and train it in a more detailed way.
 This applies as well for streets in residential areas. Here might be differences because of streets that are made from soil and sand instead of asphalt. So, it is harder to distinguish the street from other areas. A second suggestion is that the 3m resolution of the Planet satellite images is not enough. A street might be less than 3m and cannot be detected or is influenced, e.g. by a house standing next to it and sharing the same pixel. Depending on the inclination angle of the satellite image data from 2017, houses, trees and other high things might cover the street at some parts, so the pixel cannot be identified as a street. With the data basis from 2021 there was a different angle and different pixels could be identified.
 
 # Conclusion
